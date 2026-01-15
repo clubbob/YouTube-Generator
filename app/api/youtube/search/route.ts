@@ -152,13 +152,13 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. channels.list 호출 (채널 정보)
-    const channelIds = [
-      ...new Set(
-        videosData.items
-          ?.map((item: any) => item.snippet?.channelId)
-          .filter(Boolean) || []
-      ),
-    ];
+    const channelIds: string[] = Array.from(
+      new Set(
+        (videosData.items || [])
+          .map((item: any) => item.snippet?.channelId)
+          .filter((id: any): id is string => typeof id === 'string' && id.length > 0)
+      )
+    );
 
     let channelsData: { items: any[] } = { items: [] };
     if (channelIds.length > 0) {
