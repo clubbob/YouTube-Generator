@@ -6,6 +6,11 @@ import type { SearchCache, SavedVideo } from "@/types";
 let db: Firestore | null = null;
 
 function getDb(): Firestore | null {
+  // 빌드 시점에 실행되지 않도록 체크
+  if (typeof window !== 'undefined') {
+    return null;
+  }
+
   // Firebase가 설정되지 않았으면 null 반환 (선택적 기능)
   const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
@@ -16,26 +21,26 @@ function getDb(): Firestore | null {
   }
 
   if (!db) {
-    if (getApps().length === 0) {
-      let processedPrivateKey = privateKey;
+    try {
+      if (getApps().length === 0) {
+        let processedPrivateKey = privateKey;
 
-      // Private key 정리
-      // 1. 앞뒤 따옴표 제거
-      processedPrivateKey = processedPrivateKey.trim();
-      if (processedPrivateKey.startsWith('"') && processedPrivateKey.endsWith('"')) {
-        processedPrivateKey = processedPrivateKey.slice(1, -1);
-      }
-      if (processedPrivateKey.startsWith("'") && processedPrivateKey.endsWith("'")) {
-        processedPrivateKey = processedPrivateKey.slice(1, -1);
-      }
-      
-      // 2. \\n을 실제 줄바꿈으로 변환
-      processedPrivateKey = processedPrivateKey.replace(/\\n/g, "\n");
-      
-      // 3. 앞뒤 공백 제거
-      processedPrivateKey = processedPrivateKey.trim();
+        // Private key 정리
+        // 1. 앞뒤 따옴표 제거
+        processedPrivateKey = processedPrivateKey.trim();
+        if (processedPrivateKey.startsWith('"') && processedPrivateKey.endsWith('"')) {
+          processedPrivateKey = processedPrivateKey.slice(1, -1);
+        }
+        if (processedPrivateKey.startsWith("'") && processedPrivateKey.endsWith("'")) {
+          processedPrivateKey = processedPrivateKey.slice(1, -1);
+        }
+        
+        // 2. \\n을 실제 줄바꿈으로 변환
+        processedPrivateKey = processedPrivateKey.replace(/\\n/g, "\n");
+        
+        // 3. 앞뒤 공백 제거
+        processedPrivateKey = processedPrivateKey.trim();
 
-      try {
         initializeApp({
           credential: cert({
             projectId: projectId.trim(),
@@ -43,17 +48,12 @@ function getDb(): Firestore | null {
             privateKey: processedPrivateKey,
           }),
         });
-      } catch (error: any) {
-        console.error("Firebase Admin 초기화 오류:", error.message);
-        console.warn("Firebase가 설정되지 않았거나 초기화에 실패했습니다. 캐시 및 저장 기능은 사용할 수 없습니다.");
-        return null; // 초기화 실패 시 null 반환
       }
-    }
-    try {
       db = getFirestore();
     } catch (error: any) {
-      console.warn("Firestore 초기화 실패:", error.message);
-      return null;
+      console.error("Firebase Admin 초기화 오류:", error.message);
+      console.warn("Firebase가 설정되지 않았거나 초기화에 실패했습니다. 캐시 및 저장 기능은 사용할 수 없습니다.");
+      return null; // 초기화 실패 시 null 반환
     }
   }
   return db;

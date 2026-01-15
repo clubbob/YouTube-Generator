@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSavedVideos, saveVideo, deleteSavedVideo, updateSavedVideo } from "@/lib/firestore";
 import type { SavedVideo } from "@/types";
 
+// Next.js API Route runtime 설정
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 // GET: 저장된 영상 목록 조회
 export async function GET() {
   try {
