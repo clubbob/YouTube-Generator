@@ -160,10 +160,10 @@ export async function POST(request: NextRequest) {
       ),
     ];
 
-    let channelsData = { items: [] };
+    let channelsData: { items: any[] } = { items: [] };
     if (channelIds.length > 0) {
       // 50개씩 배치 처리
-      const channelBatches = [];
+      const channelBatches: string[][] = [];
       for (let i = 0; i < channelIds.length; i += 50) {
         channelBatches.push(channelIds.slice(i, i + 50));
       }
