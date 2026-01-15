@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSavedVideos, saveVideo, deleteSavedVideo, updateSavedVideo } from "@/lib/firestore";
 import type { SavedVideo } from "@/types";
 
 // Next.js API Route runtime 설정
@@ -9,6 +8,8 @@ export const dynamic = 'force-dynamic';
 // GET: 저장된 영상 목록 조회
 export async function GET() {
   try {
+    // 동적 import로 빌드 시점 실행 방지
+    const { getSavedVideos } = await import("@/lib/firestore");
     const videos = await getSavedVideos();
     return NextResponse.json({ items: videos });
   } catch (error: any) {
@@ -38,6 +39,8 @@ export async function POST(request: NextRequest) {
       tags: body.tags || [],
     };
 
+    // 동적 import로 빌드 시점 실행 방지
+    const { saveVideo } = await import("@/lib/firestore");
     await saveVideo(video);
     return NextResponse.json({ success: true, video });
   } catch (error: any) {
@@ -62,6 +65,8 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    // 동적 import로 빌드 시점 실행 방지
+    const { deleteSavedVideo } = await import("@/lib/firestore");
     await deleteSavedVideo(videoId);
     return NextResponse.json({ success: true });
   } catch (error: any) {
@@ -85,6 +90,8 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // 동적 import로 빌드 시점 실행 방지
+    const { updateSavedVideo } = await import("@/lib/firestore");
     await updateSavedVideo(body.videoId, {
       tags: body.tags,
       memo: body.memo,
