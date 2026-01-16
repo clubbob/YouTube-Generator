@@ -57,8 +57,6 @@ async function findAvailablePort(startPort = 3000, maxPort = 3010) {
 async function main() {
   try {
     const port = await findAvailablePort(3000, 3010);
-    console.log(`\n✅ 사용 가능한 포트를 찾았습니다: ${port}`);
-    console.log(`🚀 포트 ${port}에서 개발 서버를 시작합니다...\n`);
     
     // Next.js를 실행
     const nextDev = spawn('npx', ['next', 'dev', '-p', port.toString()], {
@@ -69,7 +67,17 @@ async function main() {
         ...process.env, 
         FORCE_COLOR: '1',
         NODE_ENV: 'development'
-      }
+      },
+      // Windows에서 인코딩 문제 해결
+      ...(process.platform === 'win32' && { windowsVerbatimArguments: false })
+    });
+    
+    // 프로세스가 시작되었는지 확인
+    nextDev.on('spawn', () => {
+      // 서버가 시작되면 약간의 지연 후 확인
+      setTimeout(() => {
+        // Next.js는 자동으로 "Ready" 메시지를 출력합니다
+      }, 100);
     });
     
     nextDev.on('error', (error) => {

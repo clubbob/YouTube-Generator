@@ -13,30 +13,36 @@ interface SubMenuItem {
 const menuItems: SubMenuItem[] = [
   {
     title: "1. 유튜브 채널 만들기",
+    href: "/process/1",
     subItems: [
-      { title: "1-1. 채널 컨셉 정하기 (AI Prompt)" },
-      { title: "1-2. 채널 만들기" },
+      { title: "1-1. 채널 컨셉 정하기 (AI Prompt)", href: "/process/1/1" },
+      { title: "1-2. 채널 만들기", href: "/process/1/2" },
     ],
   },
   {
     title: "2. 영상 대본 만들기",
+    href: "/process/2",
     subItems: [
-      { title: "2-1. 최근 뉴스 조회" },
+      { title: "2-1. 최근 뉴스 조회", href: "/process/2/1" },
       { title: "2-2. 인기 영상 벤치마킹", href: "/trending" },
-      { title: "2-3. 대본 만들기 (AI Prompt)" },
+      { title: "2-3. 대본 만들기 (AI Prompt)", href: "/process/2/3" },
     ],
   },
   {
     title: "3. 영상 목소리 만들기 (AI)",
+    href: "/process/3",
   },
   {
     title: "4. 영상 동영상 만들기 (AI)",
+    href: "/process/4",
   },
   {
     title: "5. 영상 유튜브 올리기",
+    href: "/process/5",
   },
   {
     title: "6. 영상 트레픽 보기",
+    href: "/process/6",
   },
 ];
 
