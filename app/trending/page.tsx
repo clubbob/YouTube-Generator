@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import SearchForm from "@/components/SearchForm";
 import VideoList from "@/components/VideoList";
+import BackButton from "@/components/BackButton";
 import type { YouTubeVideoItem } from "@/types";
 
 export default function TrendingPage() {
@@ -108,11 +109,11 @@ export default function TrendingPage() {
   };
 
   return (
-    <main className="container">
+    <main className="main-page">
       <div className="hero-section">
-        <button className="back-button" onClick={() => router.back()}>
-          ← 뒤로 가기
-        </button>
+        <div className="back-buttons">
+          <BackButton />
+        </div>
         <h1>인기 영상 벤치마킹</h1>
       </div>
 

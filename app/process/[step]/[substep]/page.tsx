@@ -1,4 +1,6 @@
-import Link from "next/link";
+"use client";
+
+import BackButton from "@/components/BackButton";
 
 const subProcessData: { [key: string]: { [key: string]: { title: string; description: string } } } = {
   "1": {
@@ -41,9 +43,9 @@ export default function SubProcessPage({ params }: { params: { step: string; sub
   return (
     <main className="main-page">
       <div className="hero-section">
-        <Link href={`/process/${step}`} className="back-link">
-          ← {step}단계로 돌아가기
-        </Link>
+        <div className="back-buttons">
+          <BackButton />
+        </div>
         <h1>{data.title}</h1>
         <p>{data.description}</p>
       </div>

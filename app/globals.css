@@ -421,9 +421,18 @@ header.header {
     padding: 10px 20px 40px 20px;
   }
 
-  .back-link {
+  .back-buttons {
     right: 10px;
     top: 10px;
+    gap: 6px;
+  }
+
+  .back-button {
+    font-size: 0.85rem;
+    padding: 5px 10px;
+  }
+
+  .back-link {
     font-size: 0.85rem;
     padding: 5px 10px;
   }
@@ -512,9 +521,6 @@ header.header {
 }
 
 .back-button {
-  position: absolute;
-  right: 20px;
-  top: 0;
   background: #f5f5f5;
   border: 1px solid #ddd;
   border-radius: 4px;
@@ -523,9 +529,14 @@ header.header {
   color: #666;
   cursor: pointer;
   transition: all 0.2s;
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
+  white-space: nowrap;
+  line-height: 1.5;
+  height: auto;
+  box-sizing: border-box;
 }
 
 .back-button:hover {
@@ -1548,13 +1559,21 @@ header.header {
 }
 
 /* Process Page Styles */
-.back-link {
+.back-buttons {
   position: absolute;
   right: 20px;
   top: 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  height: fit-content;
+}
+
+.back-link {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 4px;
   color: #666;
   font-size: 0.9rem;
   text-decoration: none;
@@ -1563,6 +1582,10 @@ header.header {
   border: 1px solid #ddd;
   border-radius: 4px;
   padding: 6px 12px;
+  white-space: nowrap;
+  line-height: 1.5;
+  height: auto;
+  box-sizing: border-box;
 }
 
 .back-link:hover {

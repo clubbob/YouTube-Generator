@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import BackButton from "@/components/BackButton";
 
 const processData: { [key: string]: { title: string; description: string; subItems: { title: string; href: string }[] } } = {
   "1": {
@@ -58,6 +61,9 @@ export default function ProcessStepPage({ params }: { params: { step: string } }
   return (
     <main className="main-page">
       <div className="hero-section">
+        <div className="back-buttons">
+          <BackButton />
+        </div>
         <h1>{data.title}</h1>
         <p>{data.description}</p>
       </div>
