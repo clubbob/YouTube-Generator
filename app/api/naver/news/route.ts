@@ -17,6 +17,25 @@ interface NaverNewsResponse {
 }
 
 /**
+ * HTML 엔티티를 디코딩하는 함수
+ */
+function decodeHtmlEntities(text: string): string {
+  if (!text) return "";
+  
+  return text
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#x2F;/g, '/')
+    .replace(/&#x60;/g, '`')
+    .replace(/&#x3D;/g, '=');
+}
+
+/**
  * 네이버 뉴스 검색 API
  * 네이버 검색 API를 사용하여 뉴스를 검색합니다.
  */
@@ -65,13 +84,19 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
     
     // 네이버 API 응답 형식 변환
-    const items: NaverNewsItem[] = (data.items || []).map((item: any) => ({
-      title: item.title?.replace(/<[^>]*>/g, "") || "", // HTML 태그 제거
-      originallink: item.originallink || "",
-      link: item.link || "",
-      description: item.description?.replace(/<[^>]*>/g, "") || "", // HTML 태그 제거
-      pubDate: item.pubDate || "",
-    }));
+    const items: NaverNewsItem[] = (data.items || []).map((item: any) => {
+      // HTML 태그 제거 후 HTML 엔티티 디코딩
+      const title = item.title?.replace(/<[^>]*>/g, "") || "";
+      const description = item.description?.replace(/<[^>]*>/g, "") || "";
+      
+      return {
+        title: decodeHtmlEntities(title),
+        originallink: item.originallink || "",
+        link: item.link || "",
+        description: decodeHtmlEntities(description),
+        pubDate: item.pubDate || "",
+      };
+    });
 
     return NextResponse.json<NaverNewsResponse>({
       items,

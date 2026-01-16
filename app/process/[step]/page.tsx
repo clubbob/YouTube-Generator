@@ -84,13 +84,6 @@ export default function ProcessStepPage({ params }: { params: { step: string } }
           </div>
         </section>
       )}
-
-      <section className="process-content">
-        <div className="content-placeholder">
-          <p>이 페이지는 현재 개발 중입니다.</p>
-          <p>곧 더 많은 기능이 추가될 예정입니다.</p>
-        </div>
-      </section>
     </main>
   );
 }

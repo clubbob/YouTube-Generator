@@ -12,14 +12,19 @@ interface NewsItem {
   pubDate: string;
 }
 
-// 인기 뉴스 자동 로드용 키워드
+// 인기 뉴스 자동 로드용 키워드 - 넓은 범위의 인기 카테고리
+// 네이버 뉴스 탭의 다양한 인기 뉴스를 수집하기 위한 키워드들
 const POPULAR_KEYWORDS = [
-  "경제",
-  "기술",
-  "스포츠",
-  "사회",
-  "정치",
-  "문화",
+  "시사",      // 시사 뉴스 (가장 일반적)
+  "정치",      // 정치 뉴스
+  "경제",      // 경제 뉴스
+  "사회",      // 사회 뉴스
+  "국제",      // 국제 뉴스
+  "문화",      // 문화 뉴스
+  "연예",      // 연예 뉴스
+  "스포츠",    // 스포츠 뉴스
+  "IT",        // IT/기술 뉴스
+  "과학",      // 과학 뉴스
 ];
 
 export default function NewsPage() {
@@ -60,10 +65,14 @@ export default function NewsPage() {
         const allNews: NewsItem[] = [];
         const seenLinks = new Set<string>(); // 중복 제거용
 
-        // 각 키워드로 검색 (최신순으로 정렬)
-        for (const keyword of POPULAR_KEYWORDS.slice(0, 3)) {
+        // 각 키워드로 검색 (인기순으로 정렬 - sim: 정확도순/인기순)
+        // 넓은 범위의 키워드로 검색하여 다양한 인기 뉴스 수집
+        const keywordsToSearch = POPULAR_KEYWORDS.slice(0, 8); // 상위 8개 키워드 사용
+        const itemsPerKeyword = 5; // 각 키워드당 5개씩 가져오기 (더 많은 키워드로 다양성 확보)
+        
+        for (const keyword of keywordsToSearch) {
           try {
-            const items = await fetchNews(keyword, 10, "date");
+            const items = await fetchNews(keyword, itemsPerKeyword, "sim");
             // 중복 제거
             items.forEach((item: NewsItem) => {
               if (!seenLinks.has(item.link)) {
@@ -77,15 +86,15 @@ export default function NewsPage() {
           }
         }
 
-        // 날짜순으로 정렬 (최신순)
+        // 날짜순으로 정렬 (최신순) - 인기 뉴스 중에서도 최신 뉴스 우선
         allNews.sort((a, b) => {
           const dateA = new Date(a.pubDate).getTime();
           const dateB = new Date(b.pubDate).getTime();
           return dateB - dateA;
         });
 
-        // 최대 30개까지만 표시
-        setNews(allNews.slice(0, 30));
+        // 최대 50개까지 표시 (더 많은 인기 뉴스 제공)
+        setNews(allNews.slice(0, 50));
       } catch (err: any) {
         setError(err.message || "인기 뉴스를 불러오는 중 오류가 발생했습니다.");
         setNews([]);
