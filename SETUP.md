@@ -17,6 +17,21 @@ npm install
 5. **사용자 인증 정보** > **사용자 인증 정보 만들기** > **API 키** 선택
 6. 생성된 API 키 복사
 
+## 2-1단계: 네이버 검색 API 키 설정 (선택사항)
+
+**pollsday 프로젝트에서 이미 사용 중인 키를 재사용할 수 있습니다.**
+
+pollsday 프로젝트의 `env.txt` 파일에서 다음 값들을 복사하여 사용하세요:
+- `NAVER_CLIENT_ID`
+- `NAVER_CLIENT_SECRET`
+
+또는 새로 발급받으려면:
+
+1. [네이버 개발자 센터](https://developers.naver.com/apps/#/register)에 접속
+2. 애플리케이션 등록
+3. 검색 API 사용 신청
+4. Client ID와 Client Secret 발급
+
 ## 3단계: Firebase 프로젝트 설정
 
 ### 3-1. Firebase 프로젝트 생성
@@ -46,6 +61,11 @@ npm install
 ```env
 # YouTube Data API v3
 YOUTUBE_API_KEY=여기에_발급받은_YouTube_API_키_입력
+
+# 네이버 검색 API (뉴스 조회용)
+# pollsday 프로젝트에서 사용 중인 키를 재사용하거나, 새로 발급받을 수 있습니다
+NAVER_CLIENT_ID=여기에_네이버_Client_ID_입력
+NAVER_CLIENT_SECRET=여기에_네이버_Client_Secret_입력
 
 # Firebase Admin SDK (서비스 계정 JSON 파일에서 가져온 값)
 FIREBASE_ADMIN_PROJECT_ID=your_project_id
