@@ -44,6 +44,14 @@ Vercel 대시보드에서 다음 환경 변수들을 추가하세요:
 YOUTUBE_API_KEY=your_youtube_api_key_here
 ```
 
+#### 네이버 검색 API (뉴스 조회용)
+```
+NAVER_CLIENT_ID=your_naver_client_id_here
+NAVER_CLIENT_SECRET=your_naver_client_secret_here
+```
+
+**참고**: pollsday 프로젝트에서 사용 중인 네이버 API 키를 재사용할 수 있습니다.
+
 #### Firebase (Public)
 ```
 NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
@@ -99,6 +107,7 @@ Vercel은 기본적으로 GitHub 저장소에 푸시할 때마다 자동으로 �
 ### API 오류
 - 환경 변수 값이 올바른지 확인
 - YouTube API 키가 활성화되어 있는지 확인
+- 네이버 API 키가 설정되었는지 확인 (뉴스 검색 기능 사용 시)
 - Firebase 설정이 올바른지 확인
 
 ### 환경 변수 포맷 오류

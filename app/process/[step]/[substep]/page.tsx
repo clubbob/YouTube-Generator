@@ -16,7 +16,7 @@ const subProcessData: { [key: string]: { [key: string]: { title: string; descrip
   },
   "2": {
     "1": {
-      title: "최근 뉴스 조회",
+      title: "인기 뉴스 조회",
       description: "최신 뉴스와 트렌드를 조회하여 영상 주제를 선정합니다",
     },
     "3": {

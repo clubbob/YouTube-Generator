@@ -19,8 +19,8 @@ const processSteps = [
     description: "뉴스 조회와 벤치마킹을 통해 영상 대본을 작성합니다",
     href: "/process/2",
     subItems: [
-      { title: "최근 뉴스 조회", available: true, href: "/process/2/1" },
-      { title: "인기 영상 벤치마킹", available: true, href: "/trending" },
+      { title: "인기 뉴스 조회", available: true, href: "/process/2/1" },
+      { title: "인기 영상 조회", available: true, href: "/trending" },
       { title: "대본 만들기 (AI Prompt)", available: true, href: "/process/2/3" },
     ],
   },

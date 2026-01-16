@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import BackButton from "@/components/BackButton";
 
@@ -12,12 +12,91 @@ interface NewsItem {
   pubDate: string;
 }
 
+// 인기 뉴스 자동 로드용 키워드
+const POPULAR_KEYWORDS = [
+  "경제",
+  "기술",
+  "스포츠",
+  "사회",
+  "정치",
+  "문화",
+];
+
 export default function NewsPage() {
   const [query, setQuery] = useState("");
   const [news, setNews] = useState<NewsItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedNews, setSelectedNews] = useState<Set<number>>(new Set());
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // 뉴스 검색 함수
+  const fetchNews = async (searchQuery: string, display: number = 20, sort: string = "sim") => {
+    try {
+      const response = await fetch(
+        `/api/naver/news?query=${encodeURIComponent(searchQuery)}&display=${display}&sort=${sort}`
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "뉴스 검색 중 오류가 발생했습니다.");
+      }
+
+      const data = await response.json();
+      return data.items || [];
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
+  // 인기 뉴스 자동 로드
+  useEffect(() => {
+    const loadPopularNews = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // 여러 키워드로 검색하여 결과 합치기
+        const allNews: NewsItem[] = [];
+        const seenLinks = new Set<string>(); // 중복 제거용
+
+        // 각 키워드로 검색 (최신순으로 정렬)
+        for (const keyword of POPULAR_KEYWORDS.slice(0, 3)) {
+          try {
+            const items = await fetchNews(keyword, 10, "date");
+            // 중복 제거
+            items.forEach((item: NewsItem) => {
+              if (!seenLinks.has(item.link)) {
+                seenLinks.add(item.link);
+                allNews.push(item);
+              }
+            });
+          } catch (err) {
+            // 개별 키워드 실패는 무시하고 계속 진행
+            console.error(`Failed to fetch news for keyword "${keyword}":`, err);
+          }
+        }
+
+        // 날짜순으로 정렬 (최신순)
+        allNews.sort((a, b) => {
+          const dateA = new Date(a.pubDate).getTime();
+          const dateB = new Date(b.pubDate).getTime();
+          return dateB - dateA;
+        });
+
+        // 최대 30개까지만 표시
+        setNews(allNews.slice(0, 30));
+      } catch (err: any) {
+        setError(err.message || "인기 뉴스를 불러오는 중 오류가 발생했습니다.");
+        setNews([]);
+      } finally {
+        setIsLoading(false);
+        setIsInitialLoad(false);
+      }
+    };
+
+    loadPopularNews();
+  }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,19 +107,11 @@ export default function NewsPage() {
 
     setIsLoading(true);
     setError(null);
+    setIsInitialLoad(false);
 
     try {
-      const response = await fetch(
-        `/api/naver/news?query=${encodeURIComponent(query)}&display=20&sort=sim`
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "뉴스 검색 중 오류가 발생했습니다.");
-      }
-
-      const data = await response.json();
-      setNews(data.items || []);
+      const items = await fetchNews(query, 20, "sim");
+      setNews(items);
     } catch (err: any) {
       setError(err.message || "뉴스 검색 중 오류가 발생했습니다.");
       setNews([]);
@@ -82,7 +153,7 @@ export default function NewsPage() {
         <div className="back-buttons">
           <BackButton />
         </div>
-        <h1>최근 뉴스 조회</h1>
+        <h1>인기 뉴스 조회</h1>
         <p>최신 뉴스와 트렌드를 조회하여 영상 주제를 선정합니다</p>
       </div>
 
@@ -130,7 +201,9 @@ export default function NewsPage() {
         {!isLoading && news.length > 0 && (
           <div className="news-results">
             <div className="news-results-header">
-              <h2>검색 결과 ({news.length}개)</h2>
+              <h2>
+                {isInitialLoad ? "인기 뉴스" : "검색 결과"} ({news.length}개)
+              </h2>
               {selectedNews.size > 0 && (
                 <div className="selected-count">
                   {selectedNews.size}개 선택됨
@@ -173,7 +246,7 @@ export default function NewsPage() {
           </div>
         )}
 
-        {!isLoading && news.length === 0 && query && !error && (
+        {!isLoading && news.length === 0 && !isInitialLoad && !error && (
           <div className="no-results">
             <p>검색 결과가 없습니다.</p>
           </div>
