@@ -87,6 +87,10 @@ export default function VideoCard({ video, onSave, isSaved, rank }: VideoCardPro
 
           <div className="video-stats">
           <div className="stat-item">
+            <span className="stat-label">채널명:</span>
+            <span className="stat-value">{video.channelTitle || "(채널명 없음)"}</span>
+          </div>
+          <div className="stat-item">
             <span className="stat-label">채널 구독자:</span>
             <span className="stat-value">{formatNumber(video.subs)}</span>
           </div>

@@ -945,8 +945,10 @@ header.header {
   padding: 30px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-top: 0;
-  margin-bottom: 30px;
+  margin: 0 auto 30px auto;
+  max-width: 1200px;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .search-form {
@@ -1009,7 +1011,10 @@ header.header {
 }
 
 .results-section {
-  margin-top: 30px;
+  margin: 30px auto 0 auto;
+  max-width: 1200px;
+  padding: 0 20px;
+  box-sizing: border-box;
 }
 
 .results-section h2 {
@@ -1443,6 +1448,9 @@ header.header {
   text-align: center;
   padding: 60px 20px;
   color: #666;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .error-message {
@@ -1451,7 +1459,9 @@ header.header {
   color: #c33;
   padding: 15px;
   border-radius: 4px;
-  margin-bottom: 20px;
+  margin: 0 auto 20px auto;
+  max-width: 1200px;
+  box-sizing: border-box;
 }
 
 .saved-video-item {
