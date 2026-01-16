@@ -54,8 +54,38 @@ export default function Home() {
         <p>유튜브 컨텐츠 영상을 만들기 위한 AI 도구 지원 서비스</p>
       </div>
 
-      <section className="process-grid">
-        {processSteps.map((step) => (
+      <section className="service-summary">
+        <div className="summary-content">
+          <h2 className="summary-title">서비스 소개</h2>
+          <p className="summary-description">
+            YouTube Generator는 AI 기술을 활용하여 유튜브 영상 제작 전 과정을 지원하는 통합 플랫폼입니다.
+          </p>
+          <div className="summary-features">
+            <div className="feature-item">
+              <div className="feature-icon">🎯</div>
+              <div className="feature-content">
+                <h3 className="feature-title">스마트 벤치마킹</h3>
+                <p className="feature-text">인기 영상을 분석하여 트렌드를 파악하고 성공 가능성이 높은 컨텐츠를 찾아드립니다.</p>
+              </div>
+            </div>
+            <div className="feature-item">
+              <div className="feature-icon">🤖</div>
+              <div className="feature-content">
+                <h3 className="feature-title">AI 기반 자동화</h3>
+                <p className="feature-text">대본 작성, 목소리 생성, 영상 제작까지 AI가 자동으로 처리하여 시간을 절약합니다.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="process-section">
+        <h2 className="process-section-title">유튜브 영상 제작 프로세스</h2>
+        <p className="process-section-description">
+          채널 기획부터 영상 업로드까지, 유튜브 크리에이터를 위한 6단계 제작 프로세스를 제공합니다.
+        </p>
+        <div className="process-grid">
+          {processSteps.map((step) => (
           <div key={step.number} className="process-card">
             <div className="card-header">
               <span className="card-number">{step.number}</span>
@@ -85,7 +115,8 @@ export default function Home() {
               </div>
             )}
           </div>
-        ))}
+          ))}
+        </div>
       </section>
     </main>
   );

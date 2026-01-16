@@ -429,13 +429,53 @@ header.header {
     font-size: 1rem;
   }
 
+  .process-section {
+    padding: 40px 20px 40px 20px;
+    border-radius: 8px;
+  }
+
+  .process-section-title {
+    font-size: 1.6rem;
+    margin-bottom: 12px;
+  }
+
+  .process-section-description {
+    font-size: 1rem;
+    margin-bottom: 30px;
+  }
+
   .process-grid {
     grid-template-columns: 1fr;
     gap: 20px;
-    padding: 0 10px 40px 10px;
+    padding: 0;
   }
 
   .process-card {
+    padding: 20px;
+  }
+
+  .service-summary {
+    padding: 40px 20px;
+    margin-bottom: 30px;
+    border-radius: 8px;
+  }
+
+  .summary-title {
+    font-size: 1.6rem;
+    margin-bottom: 12px;
+  }
+
+  .summary-description {
+    font-size: 1rem;
+    margin-bottom: 30px;
+  }
+
+  .summary-features {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .feature-item {
     padding: 20px;
   }
 }
@@ -448,9 +488,9 @@ header.header {
 
 /* Main Page */
 .main-page {
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 20px 20px 40px 20px;
+  padding: 20px 0 40px 0;
 }
 
 /* Hero Section */
@@ -500,12 +540,117 @@ header.header {
   margin: 0;
 }
 
+/* Service Summary */
+.service-summary {
+  padding: 60px 20px;
+  margin: 0 auto 40px auto;
+  max-width: 1200px;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  background: #fafafa;
+  box-sizing: border-box;
+}
+
+.summary-content {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.summary-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-align: center;
+  margin: 0 0 16px 0;
+}
+
+.summary-description {
+  font-size: 1.1rem;
+  color: #666;
+  line-height: 1.6;
+  text-align: center;
+  margin: 0 0 40px 0;
+}
+
+.summary-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 32px;
+  margin-top: 40px;
+}
+
+.feature-item {
+  display: flex;
+  gap: 20px;
+  padding: 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s;
+}
+
+.feature-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.feature-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.feature-content {
+  flex: 1;
+}
+
+.feature-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.feature-text {
+  font-size: 0.95rem;
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Process Section */
+.process-section {
+  padding: 60px 20px 40px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  background: #fafafa;
+  box-sizing: border-box;
+}
+
+.process-section-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-align: center;
+  margin: 0 0 16px 0;
+}
+
+.process-section-description {
+  font-size: 1.1rem;
+  color: #666;
+  text-align: center;
+  margin: 0 0 40px 0;
+  line-height: 1.6;
+}
+
 /* Process Grid */
 .process-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 24px;
-  padding: 0 20px 40px 20px;
+  padding: 0;
 }
 
 .process-card {
@@ -627,12 +772,7 @@ header.header {
   font-weight: 500;
 }
 
-/* Process Section */
-.process-section {
-  padding: 40px 20px 60px;
-  max-width: 900px;
-  margin: 0 auto;
-}
+/* Process Section - Legacy (not used) */
 
 .process-title {
   font-size: 1.8rem;
