@@ -94,12 +94,14 @@ export default function Home() {
         </p>
         <div className="process-grid">
           {processSteps.map((step) => (
-          <Link key={step.number} href={step.href} className="process-card">
-            <div className="card-header">
-              <span className="card-number">{step.number}</span>
-              <h3 className="card-title">{step.title}</h3>
-            </div>
-            <p className="card-description">{step.description}</p>
+          <div key={step.number} className="process-card">
+            <Link href={step.href} className="process-card-link">
+              <div className="card-header">
+                <span className="card-number">{step.number}</span>
+                <h3 className="card-title">{step.title}</h3>
+              </div>
+              <p className="card-description">{step.description}</p>
+            </Link>
             {step.subItems.length > 0 && (
               <div className="card-subitems">
                 {step.subItems.map((subItem, index) => (
@@ -108,7 +110,6 @@ export default function Home() {
                       key={index}
                       href={subItem.href}
                       className="subitem-link"
-                      onClick={(e) => e.stopPropagation()}
                     >
                       <span className="subitem-dot">•</span>
                       <span className="subitem-text">{subItem.title}</span>
@@ -123,7 +124,7 @@ export default function Home() {
                 ))}
               </div>
             )}
-          </Link>
+          </div>
           ))}
         </div>
       </section>

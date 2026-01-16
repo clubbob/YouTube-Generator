@@ -666,9 +666,11 @@ header.header {
 /* Process Grid */
 .process-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 24px;
   padding: 0;
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
 .process-card {
@@ -676,11 +678,22 @@ header.header {
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s;
   border: 1px solid #f0f0f0;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.process-card-link {
   text-decoration: none;
-  display: block;
   color: inherit;
+  display: block;
+  flex: 1;
+  transition: all 0.3s;
+}
+
+.process-card-link:hover {
+  transform: translateY(-2px);
 }
 
 .process-card:hover {
