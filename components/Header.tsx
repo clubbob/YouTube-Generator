@@ -4,13 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 
-interface MenuItem {
+interface SubMenuItem {
   title: string;
   href?: string;
   subItems?: { title: string; href?: string }[];
 }
 
-const menuItems: MenuItem[] = [
+const menuItems: SubMenuItem[] = [
   {
     title: "1. 유튜브 채널 만들기",
     subItems: [
@@ -42,10 +42,11 @@ const menuItems: MenuItem[] = [
 
 export default function Header() {
   const pathname = usePathname();
-  const [openMenu, setOpenMenu] = useState<number | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileOpenIndex, setMobileOpenIndex] = useState<number | null>(null);
 
-  // 모바일 메뉴가 열릴 때 body 스크롤 막기
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = "hidden";
@@ -73,58 +74,146 @@ export default function Header() {
           <span></span>
         </button>
         <nav className={`header-nav ${mobileMenuOpen ? "mobile-open" : ""}`}>
-          {menuItems.map((item, index) => (
-            <div
-              key={index}
-              className="nav-item-wrapper"
-              onMouseEnter={() => item.subItems && setOpenMenu(index)}
-              onMouseLeave={() => setOpenMenu(null)}
+          <div
+            className="nav-item-wrapper main-menu"
+            onMouseEnter={() => {
+              if (window.innerWidth > 768) {
+                setIsMenuOpen(true);
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (window.innerWidth > 768) {
+                const relatedTarget = e.relatedTarget as HTMLElement;
+                if (!relatedTarget || 
+                    (!relatedTarget.closest('.main-menu') && 
+                     !relatedTarget.closest('.menu-dropdown'))) {
+                  setIsMenuOpen(false);
+                  setHoveredIndex(null);
+                }
+              }
+            }}
+          >
+            <div 
+              className="nav-item-main"
+              onClick={() => {
+                if (window.innerWidth <= 768) {
+                  setIsMenuOpen(!isMenuOpen);
+                }
+              }}
             >
+              <span className="nav-link main-menu-link">
+                유튜브 영상 제작 프로세스
+              </span>
+            </div>
+            {isMenuOpen && (
               <div 
-                className="nav-item-main"
-                onClick={(e) => {
-                  if (item.subItems && window.innerWidth <= 768) {
-                    e.preventDefault();
-                    setOpenMenu(openMenu === index ? null : index);
+                className="menu-dropdown"
+                onMouseEnter={() => {
+                  if (window.innerWidth > 768) {
+                    setIsMenuOpen(true);
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (window.innerWidth > 768) {
+                    const relatedTarget = e.relatedTarget as HTMLElement;
+                    if (!relatedTarget || 
+                        (!relatedTarget.closest('.main-menu') && 
+                         !relatedTarget.closest('.menu-dropdown'))) {
+                      setIsMenuOpen(false);
+                      setHoveredIndex(null);
+                    }
                   }
                 }}
               >
-                {item.href ? (
-                  <Link
-                    href={item.href}
-                    className={`nav-link ${pathname === item.href ? "active" : ""}`}
-                    onClick={() => setMobileMenuOpen(false)}
+                {menuItems.map((item, index) => (
+                  <div
+                    key={index}
+                    className="menu-item"
+                    onMouseEnter={() => {
+                      if (window.innerWidth > 768 && item.subItems) {
+                        setHoveredIndex(index);
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      if (window.innerWidth > 768) {
+                        setHoveredIndex(null);
+                      }
+                    }}
                   >
-                    {item.title}
-                  </Link>
-                ) : (
-                  <span className="nav-link">{item.title}</span>
-                )}
-                {item.subItems && (
-                  <span className="dropdown-arrow">▼</span>
-                )}
+                    {item.href ? (
+                      <Link
+                        href={item.href}
+                        className={`menu-link ${pathname === item.href ? "active" : ""}`}
+                        onClick={(e) => {
+                          if (window.innerWidth <= 768 && item.subItems) {
+                            e.preventDefault();
+                            setMobileOpenIndex(mobileOpenIndex === index ? null : index);
+                          } else {
+                            setMobileMenuOpen(false);
+                            setIsMenuOpen(false);
+                          }
+                        }}
+                      >
+                        {item.title}
+                        {item.subItems && <span className="arrow">▶</span>}
+                      </Link>
+                    ) : (
+                      <div 
+                        className="menu-link"
+                        onClick={() => {
+                          if (window.innerWidth <= 768 && item.subItems) {
+                            setMobileOpenIndex(mobileOpenIndex === index ? null : index);
+                          }
+                        }}
+                      >
+                        {item.title}
+                        {item.subItems && <span className="arrow">▶</span>}
+                      </div>
+                    )}
+                    {item.subItems && (
+                      <div 
+                        className={`submenu ${hoveredIndex === index ? "show" : ""} ${mobileOpenIndex === index ? "mobile-show" : ""}`}
+                        onMouseEnter={() => {
+                          if (window.innerWidth > 768) {
+                            setHoveredIndex(index);
+                            setIsMenuOpen(true);
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (window.innerWidth > 768) {
+                            const relatedTarget = e.relatedTarget as HTMLElement;
+                            if (!relatedTarget || 
+                                (!relatedTarget.closest('.menu-item') && 
+                                 !relatedTarget.closest('.submenu'))) {
+                              setHoveredIndex(null);
+                            }
+                          }
+                        }}
+                      >
+                        {item.subItems.map((subItem, subIndex) => (
+                          <Link
+                            key={subIndex}
+                            href={subItem.href || "#"}
+                            className={`submenu-item ${pathname === subItem.href ? "active" : ""}`}
+                            onClick={(e) => {
+                              if (!subItem.href) {
+                                e.preventDefault();
+                              }
+                              setMobileMenuOpen(false);
+                              setIsMenuOpen(false);
+                              setMobileOpenIndex(null);
+                            }}
+                          >
+                            {subItem.title}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-              {item.subItems && openMenu === index && (
-                <div className="dropdown-menu">
-                  {item.subItems.map((subItem, subIndex) => (
-                    <Link
-                      key={subIndex}
-                      href={subItem.href || "#"}
-                      className={`dropdown-item ${pathname === subItem.href ? "active" : ""}`}
-                      onClick={(e) => {
-                        if (!subItem.href) {
-                          e.preventDefault();
-                        }
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      {subItem.title}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+            )}
+          </div>
         </nav>
       </div>
     </header>
