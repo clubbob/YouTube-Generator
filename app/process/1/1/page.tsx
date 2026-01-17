@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import BackButton from "@/components/BackButton";
-import type { ChannelConcept } from "@/types";
 
 export default function ChannelConceptPage() {
   // 새로운 항목 구조
@@ -28,7 +27,6 @@ export default function ChannelConceptPage() {
   const [productionSustainability, setProductionSustainability] = useState("AI 음성과 이미지/영상 기반 제작으로 얼굴 노출 없이 제작 가능. 하루 1개 이상 업로드 가능한 구조. 트렌드 기반 콘텐츠로 지속적인 주제 확보 가능");
 
   const [generatedPrompt, setGeneratedPrompt] = useState("");
-  const [conceptResult, setConceptResult] = useState<ChannelConcept | null>(null);
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -96,134 +94,8 @@ ${productionSustainability}
     }
   };
 
-  const handleParseResult = async () => {
-    if (!aiResponse.trim()) {
-      alert("AI 응답을 입력해주세요.");
-      return;
-    }
-
-    setIsParsing(true);
-    setSaveMessage(null);
-
-    try {
-      // 간단한 파싱 로직: JSON 형식이면 파싱, 아니면 텍스트에서 추출 시도
-      let parsed: ChannelConcept = {};
-
-      // JSON 형식인지 확인
-      try {
-        parsed = JSON.parse(aiResponse);
-      } catch {
-        // JSON이 아니면 텍스트에서 추출 시도
-        const lines = aiResponse.split('\n');
-        const channelNames: string[] = [];
-        let currentSection = '';
-
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i].trim();
-          
-          // 채널 이름 추출 (0. 채널 추천 이름 섹션)
-          if (line.includes('채널 추천 이름') || line.includes('채널 이름')) {
-            currentSection = 'names';
-            continue;
-          }
-          
-          if (currentSection === 'names' && line && !line.startsWith('-') && !line.startsWith('→')) {
-            const nameMatch = line.match(/^(\d+\.\s*)?([^→]+)/);
-            if (nameMatch && nameMatch[2]) {
-              const name = nameMatch[2].trim().replace(/^[^\w가-힣]+/, '').trim();
-              if (name && name.length <= 10 && channelNames.length < 10) {
-                channelNames.push(name);
-              }
-            }
-          }
-
-          // 슬로건 추출
-          if (line.includes('채널 핵심 컨셉') || line.includes('슬로건')) {
-            if (lines[i + 1]) {
-              parsed.slogan = lines[i + 1].trim();
-            }
-          }
-
-          // 타겟 시청자 추출
-          if (line.includes('타겟 시청자') || line.includes('시청자')) {
-            let audience = '';
-            for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
-              if (lines[j].trim() && !lines[j].trim().startsWith('-')) {
-                audience += lines[j].trim() + ' ';
-              }
-            }
-            if (audience) parsed.targetAudience = audience.trim();
-          }
-
-          // 콘텐츠 카테고리 추출
-          if (line.includes('콘텐츠 카테고리') || line.includes('카테고리')) {
-            const categories: string[] = [];
-            for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
-              const catLine = lines[j].trim();
-              if (catLine && (catLine.startsWith('-') || catLine.includes('/'))) {
-                const cats = catLine.replace(/^-\s*/, '').split(/[,\/]/).map(c => c.trim()).filter(c => c);
-                categories.push(...cats);
-              }
-            }
-            if (categories.length > 0) parsed.contentCategories = categories;
-          }
-        }
-
-        if (channelNames.length > 0) parsed.channelNames = channelNames;
-      }
-
-      setConceptResult(parsed);
-      setSaveMessage("결과를 파싱했습니다. 저장 버튼을 클릭하여 저장하세요.");
-      setTimeout(() => setSaveMessage(null), 3000);
-    } catch (error: any) {
-      console.error("파싱 오류:", error);
-      setSaveMessage(`파싱 실패: ${error.message}. JSON 형식으로 입력하거나 텍스트 형식으로 입력해주세요.`);
-      setTimeout(() => setSaveMessage(null), 5000);
-    } finally {
-      setIsParsing(false);
-    }
-  };
-
   const handleRefresh = () => {
     window.location.reload();
-  };
-
-  const handleSaveResult = async () => {
-    if (!conceptResult) {
-      alert("저장할 결과가 없습니다. 먼저 AI 응답을 입력하고 파싱해주세요.");
-      return;
-    }
-
-    setIsSaving(true);
-    setSaveMessage(null);
-
-    try {
-      const response = await fetch("/api/channel-concepts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(conceptResult),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "저장에 실패했습니다.");
-      }
-
-      setSaveMessage("채널 컨셉이 성공적으로 저장되었습니다!");
-      setConceptResult({ ...conceptResult, conceptId: data.conceptId });
-      
-      // 3초 후 메시지 제거
-      setTimeout(() => setSaveMessage(null), 3000);
-    } catch (error: any) {
-      console.error("저장 오류:", error);
-      setSaveMessage(`저장 실패: ${error.message}`);
-      setTimeout(() => setSaveMessage(null), 5000);
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   return (
@@ -395,30 +267,6 @@ ${productionSustainability}
           )}
         </div>
 
-        {conceptResult && (
-          <div className="concept-result-section">
-            <h2 className="section-title">📝 설계 결과</h2>
-            <div className="result-content">
-              {conceptResult.channelNames && (
-                <div className="result-item">
-                  <h3>채널 추천 이름</h3>
-                  <ul>
-                    {conceptResult.channelNames.map((name, index) => (
-                      <li key={index}>{name}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {conceptResult.slogan && (
-                <div className="result-item">
-                  <h3>채널 핵심 컨셉</h3>
-                  <p>{conceptResult.slogan}</p>
-                </div>
-              )}
-              {/* 추가 결과 항목들... */}
-            </div>
-          </div>
-        )}
       </section>
     </main>
   );
