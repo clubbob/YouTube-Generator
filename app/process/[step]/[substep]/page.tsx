@@ -6,7 +6,7 @@ import BackButton from "@/components/BackButton";
 const subProcessData: { [key: string]: { [key: string]: { title: string; description: string } } } = {
   "1": {
     "1": {
-      title: "채널 컨셉 정하기 (AI Prompt)",
+      title: "채널 컨셉 정하기",
       description: "AI를 활용하여 유튜브 채널의 컨셉과 방향성을 정합니다",
     },
     "2": {

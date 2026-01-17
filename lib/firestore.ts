@@ -1,6 +1,6 @@
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore, Firestore } from "firebase-admin/firestore";
-import type { SearchCache, SavedVideo } from "@/types";
+import type { SearchCache, SavedVideo, ChannelConcept } from "@/types";
 
 // Firebase Admin 초기화 (서버 사이드 전용)
 let db: Firestore | null = null;
@@ -168,6 +168,91 @@ export async function updateSavedVideo(
       .update(updates);
   } catch (error: any) {
     console.error("영상 업데이트 실패:", error.message);
+    throw error;
+  }
+}
+
+// Channel Concepts 관련 함수
+export async function getChannelConcepts(): Promise<ChannelConcept[]> {
+  const db = getDb();
+  if (!db) {
+    console.warn("Firebase가 설정되지 않아 저장된 채널 컨셉을 불러올 수 없습니다.");
+    return [];
+  }
+  
+  try {
+    const snapshot = await db
+      .collection("channel_concepts")
+      .doc(USER_ID)
+      .collection("items")
+      .orderBy("createdAt", "desc")
+      .get();
+    
+    return snapshot.docs.map((doc) => ({
+      ...doc.data(),
+      conceptId: doc.id,
+    } as ChannelConcept));
+  } catch (error: any) {
+    console.warn("저장된 채널 컨셉 조회 실패:", error.message);
+    return [];
+  }
+}
+
+export async function saveChannelConcept(concept: ChannelConcept): Promise<string> {
+  const db = getDb();
+  if (!db) {
+    throw new Error("Firebase가 설정되지 않아 채널 컨셉을 저장할 수 없습니다. Firebase 설정을 확인하세요.");
+  }
+  
+  try {
+    const now = new Date().toISOString();
+    const conceptData: ChannelConcept = {
+      ...concept,
+      createdAt: concept.createdAt || now,
+      updatedAt: now,
+    };
+
+    let docRef;
+    if (concept.conceptId) {
+      // 기존 문서 업데이트
+      docRef = db
+        .collection("channel_concepts")
+        .doc(USER_ID)
+        .collection("items")
+        .doc(concept.conceptId);
+      await docRef.update(conceptData);
+      return concept.conceptId;
+    } else {
+      // 새 문서 생성
+      docRef = db
+        .collection("channel_concepts")
+        .doc(USER_ID)
+        .collection("items")
+        .doc();
+      await docRef.set(conceptData);
+      return docRef.id;
+    }
+  } catch (error: any) {
+    console.error("채널 컨셉 저장 실패:", error.message);
+    throw error;
+  }
+}
+
+export async function deleteChannelConcept(conceptId: string): Promise<void> {
+  const db = getDb();
+  if (!db) {
+    throw new Error("Firebase가 설정되지 않아 채널 컨셉을 삭제할 수 없습니다.");
+  }
+  
+  try {
+    await db
+      .collection("channel_concepts")
+      .doc(USER_ID)
+      .collection("items")
+      .doc(conceptId)
+      .delete();
+  } catch (error: any) {
+    console.error("채널 컨셉 삭제 실패:", error.message);
     throw error;
   }
 }

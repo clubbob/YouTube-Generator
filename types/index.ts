@@ -56,3 +56,17 @@ export interface SavedVideo {
   memo?: string;
   createdAt: string;
 }
+
+export interface ChannelConcept {
+  conceptId?: string;
+  channelNames?: string[];
+  slogan?: string;
+  targetAudience?: string;
+  contentCategories?: string[];
+  videoStructure?: string;
+  toneAndCharacter?: string;
+  differentiation?: string;
+  expansion?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
