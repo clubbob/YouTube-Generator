@@ -206,12 +206,7 @@ export async function saveChannelConcept(concept: ChannelConcept): Promise<strin
   
   try {
     const now = new Date().toISOString();
-    const conceptData: ChannelConcept = {
-      ...concept,
-      createdAt: concept.createdAt || now,
-      updatedAt: now,
-    };
-
+    
     let docRef;
     if (concept.conceptId) {
       // 기존 문서 업데이트
@@ -220,7 +215,13 @@ export async function saveChannelConcept(concept: ChannelConcept): Promise<strin
         .doc(USER_ID)
         .collection("items")
         .doc(concept.conceptId);
-      await docRef.update(conceptData);
+      
+      // conceptId를 제외한 업데이트 데이터 생성
+      const { conceptId, ...updateData } = concept;
+      await docRef.update({
+        ...updateData,
+        updatedAt: now,
+      });
       return concept.conceptId;
     } else {
       // 새 문서 생성
@@ -229,6 +230,12 @@ export async function saveChannelConcept(concept: ChannelConcept): Promise<strin
         .doc(USER_ID)
         .collection("items")
         .doc();
+      
+      const conceptData: ChannelConcept = {
+        ...concept,
+        createdAt: concept.createdAt || now,
+        updatedAt: now,
+      };
       await docRef.set(conceptData);
       return docRef.id;
     }
