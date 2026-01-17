@@ -15,7 +15,7 @@ const menuItems: SubMenuItem[] = [
     title: "1. 유튜브 채널 만들기",
     href: "/process/1",
     subItems: [
-      { title: "1-1. 채널 컨셉 정하기", href: "/process/1/1" },
+      { title: "1-1. 채널 컨셉 설정", href: "/process/1/1" },
       { title: "1-2. 채널 만들기", href: "/process/1/2" },
     ],
   },

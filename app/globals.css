@@ -2098,6 +2098,33 @@ header.header {
   gap: 8px;
 }
 
+.section-description {
+  font-size: 1rem;
+  color: #666;
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+}
+
+.prompt-info-box {
+  background: #f0f7ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.prompt-info-text {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #333;
+  line-height: 1.6;
+}
+
+.prompt-info-text strong {
+  color: #0066cc;
+  font-weight: 600;
+}
+
 .guide-content {
   display: flex;
   flex-direction: column;
@@ -2170,6 +2197,10 @@ header.header {
   display: flex;
   gap: 12px;
   margin-bottom: 24px;
+}
+
+.button-group {
+  justify-content: center;
 }
 
 .primary-button {
@@ -2291,6 +2322,48 @@ header.header {
   background: #fff;
   border-radius: 6px;
   border-left: 3px solid #0066cc;
+}
+
+.result-hint-box {
+  background: #f0f7ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 16px;
+}
+
+.result-hint-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #0066cc;
+  margin: 0 0 16px 0;
+}
+
+.result-hint-steps {
+  margin: 0 0 16px 0;
+  padding-left: 24px;
+  color: #333;
+  line-height: 1.8;
+}
+
+.result-hint-steps li {
+  margin: 8px 0;
+}
+
+.result-hint-note {
+  margin: 0;
+  padding: 12px;
+  background: #fff;
+  border-radius: 6px;
+  border-left: 3px solid #0066cc;
+  color: #555;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.result-hint-note strong {
+  color: #0066cc;
+  font-weight: 600;
 }
 
 .success-message {
@@ -2516,5 +2589,34 @@ header.header {
 
   .prompt-content pre {
     font-size: 0.85rem;
+  }
+
+  .prompt-info-box {
+    padding: 12px 16px;
+  }
+
+  .prompt-info-text {
+    font-size: 0.9rem;
+  }
+
+  .button-group .primary-button {
+    width: 100%;
+  }
+
+  .result-hint-box {
+    padding: 16px;
+  }
+
+  .result-hint-title {
+    font-size: 1rem;
+  }
+
+  .result-hint-steps {
+    font-size: 0.9rem;
+  }
+
+  .result-hint-note {
+    font-size: 0.85rem;
+    padding: 10px;
   }
 }

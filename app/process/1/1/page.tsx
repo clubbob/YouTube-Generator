@@ -111,7 +111,7 @@ ${productionSustainability}
             🔄 새로고침
           </button>
         </div>
-        <h1>채널 컨셉 정하기</h1>
+        <h1>채널 컨셉 설정</h1>
         <p>AI를 활용하여 유튜브 채널의 컨셉과 방향성을 정합니다</p>
       </div>
 
@@ -119,7 +119,7 @@ ${productionSustainability}
         <div className="prompt-section">
           <h2 className="section-title">🤖 AI 프롬프트 생성</h2>
           <p className="section-description">
-            각 항목을 수정하여 원하는 프롬프트를 만들어보세요. 기본값이 설정되어 있습니다.
+            유튜브 채널 컨셉을 설계하기 위해 AI에게 전달할 지시문(프롬프트)을 만드는 페이지입니다. 아래 10가지 항목에 원하는 내용을 입력하거나 기본값을 수정한 후, 하단의 "프롬프트 생성" 버튼을 클릭하면 ChatGPT, Claude, Gemini 등 AI 도구에 사용할 프롬프트가 생성됩니다. 생성된 프롬프트를 AI 도구에 붙여넣으면 채널 이름, 슬로건, 콘텐츠 카테고리 등 채널 컨셉 설계 결과를 받을 수 있습니다.
           </p>
           
           <div className="prompt-form">
@@ -259,9 +259,18 @@ ${productionSustainability}
                 <pre>{generatedPrompt}</pre>
               </div>
               <div className="result-actions">
-                <p className="result-hint">
-                  💡 위 프롬프트를 ChatGPT, Claude, Gemini 등 AI 도구에 복사하여 당신의 유튜브 채널 컨셉을 만들어 보세요.
-                </p>
+                <div className="result-hint-box">
+                  <h4 className="result-hint-title">📋 다음 단계</h4>
+                  <ol className="result-hint-steps">
+                    <li>위의 "📋 복사" 버튼을 클릭하여 프롬프트를 복사하세요.</li>
+                    <li>ChatGPT, Claude, Gemini 등 AI 도구를 열어주세요.</li>
+                    <li>복사한 프롬프트를 AI 도구에 붙여넣고 실행하세요.</li>
+                    <li>AI가 생성한 채널 컨셉 설계 결과를 확인하세요.</li>
+                  </ol>
+                  <p className="result-hint-note">
+                    💡 <strong>팁:</strong> 생성된 결과에서 채널 이름, 슬로건, 콘텐츠 카테고리 등을 확인하고 필요시 프롬프트를 수정하여 다시 생성할 수 있습니다.
+                  </p>
+                </div>
               </div>
             </div>
           )}

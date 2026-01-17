@@ -8,7 +8,7 @@ const processData: { [key: string]: { title: string; description: string; subIte
     title: "유튜브 채널 만들기",
     description: "채널 컨셉을 정하고 유튜브 채널을 생성합니다",
     subItems: [
-      { title: "채널 컨셉 정하기", href: "/process/1/1" },
+      { title: "채널 컨셉 설정", href: "/process/1/1" },
       { title: "채널 만들기", href: "/process/1/2" },
     ],
   },

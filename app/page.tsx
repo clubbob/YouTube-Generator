@@ -9,7 +9,7 @@ const processSteps = [
     description: "채널 컨셉을 정하고 유튜브 채널을 생성합니다",
     href: "/process/1",
     subItems: [
-      { title: "채널 컨셉 정하기", available: true, href: "/process/1/1" },
+      { title: "채널 컨셉 설정", available: true, href: "/process/1/1" },
       { title: "채널 만들기", available: true, href: "/process/1/2" },
     ],
   },
