@@ -187,11 +187,12 @@ export default function NewsPage() {
 
         const categoryResults = await Promise.allSettled(categoryPromises);
         
-        categoryResults.forEach((result) => {
+        categoryResults.forEach((result, index) => {
+          const category = selectedCategories[index];
           if (result.status === 'fulfilled') {
             newsByCategoryMap[result.value.category] = result.value.items;
           } else {
-            newsByCategoryMap[result.value.category] = [];
+            newsByCategoryMap[category] = [];
           }
         });
 
@@ -225,11 +226,12 @@ export default function NewsPage() {
 
         const categoryResults = await Promise.allSettled(categoryPromises);
         
-        categoryResults.forEach((result) => {
+        categoryResults.forEach((result, index) => {
+          const category = selectedCategories[index];
           if (result.status === 'fulfilled') {
             newsByCategoryMap[result.value.category] = result.value.items;
           } else {
-            newsByCategoryMap[result.value.category] = [];
+            newsByCategoryMap[category] = [];
           }
         });
 
