@@ -80,7 +80,7 @@ export default function NewsPage() {
         const items = await fetchNews(category, itemsPerKeyword, "sim"); // 인기순
         return {
           category,
-          items: items.map((item) => ({
+          items: items.map((item: NewsItem) => ({
             ...item,
             category,
           })),
@@ -178,7 +178,7 @@ export default function NewsPage() {
           const items = await fetchNews(searchTerm, 10, "sim"); // 인기순, 10개씩
           return {
             category,
-            items: items.map((item) => ({
+            items: items.map((item: NewsItem) => ({
               ...item,
               category,
             })),
@@ -216,7 +216,7 @@ export default function NewsPage() {
           const items = await fetchNews(category, 10, "sim"); // 인기순, 10개씩
           return {
             category,
-            items: items.map((item) => ({
+            items: items.map((item: NewsItem) => ({
               ...item,
               category,
             })),
