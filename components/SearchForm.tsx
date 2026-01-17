@@ -69,20 +69,20 @@ export default function SearchForm({ onSearch, isLoading }: SearchFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="search-form">
-      <div className="form-group">
-        <label htmlFor="query">키워드 검색</label>
-        <input
-          id="query"
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="예: ai productivity, 코딩 팁..."
-          disabled={isLoading}
-          required
-        />
-      </div>
-
       <div className="form-row">
+        <div className="form-group">
+          <label htmlFor="query">키워드 검색</label>
+          <input
+            id="query"
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="예: ai productivity, 코딩 팁..."
+            disabled={isLoading}
+            required
+          />
+        </div>
+
         <div className="form-group">
           <label htmlFor="timeframe">기간 필터</label>
           <select
@@ -113,9 +113,7 @@ export default function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             <option value="shorts_like">Shorts 유사</option>
           </select>
         </div>
-      </div>
 
-      <div className="form-row">
         <div className="form-group">
           <label htmlFor="subscriberMax">최대 구독자 수</label>
           <input
@@ -139,9 +137,7 @@ export default function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             disabled={isLoading}
           />
         </div>
-      </div>
 
-      <div className="form-row">
         <div className="form-group">
           <label htmlFor="minDurationSec">최소 영상 길이 (초)</label>
           <input

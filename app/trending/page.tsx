@@ -113,6 +113,13 @@ export default function TrendingPage() {
       <div className="hero-section">
         <div className="back-buttons">
           <BackButton />
+          <button
+            onClick={() => window.location.reload()}
+            className="refresh-button"
+            title="페이지 새로고침"
+          >
+            🔄 새로고침
+          </button>
         </div>
         <h1>인기 영상 조회</h1>
       </div>

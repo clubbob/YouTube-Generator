@@ -43,7 +43,6 @@ export default function NewsPage() {
   const [activeTab, setActiveTab] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedNews, setSelectedNews] = useState<Set<string>>(new Set()); // category:index 형식
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // 뉴스 검색 함수
@@ -262,18 +261,6 @@ export default function NewsPage() {
     });
   };
 
-  const toggleSelect = (category: string, index: number) => {
-    const key = `${category}:${index}`;
-    setSelectedNews((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(key)) {
-        newSet.delete(key);
-      } else {
-        newSet.add(key);
-      }
-      return newSet;
-    });
-  };
 
   const formatDate = (dateString: string) => {
     try {
@@ -295,6 +282,13 @@ export default function NewsPage() {
       <div className="hero-section">
         <div className="back-buttons">
           <BackButton />
+          <button
+            onClick={() => window.location.reload()}
+            className="refresh-button"
+            title="페이지 새로고침"
+          >
+            🔄 새로고침
+          </button>
         </div>
         <h1>인기 뉴스 조회</h1>
         <p>최신 뉴스와 트렌드를 조회하여 영상 주제를 선정합니다</p>
@@ -305,11 +299,23 @@ export default function NewsPage() {
           <div className="category-selector">
             <label className="category-label">
               카테고리 선택 (복수 선택 가능):
-              {selectedCategories.length > 0 && (
-                <span className="selected-count"> ({selectedCategories.length}개 선택됨)</span>
-              )}
             </label>
             <div className="category-buttons">
+              <button
+                type="button"
+                className={`category-button select-all-button ${selectedCategories.length === POPULAR_KEYWORDS.length ? "active" : ""}`}
+                onClick={() => {
+                  if (selectedCategories.length === POPULAR_KEYWORDS.length) {
+                    // 모두 선택된 상태면 전체 해제
+                    setSelectedCategories([]);
+                  } else {
+                    // 모두 선택
+                    setSelectedCategories([...POPULAR_KEYWORDS]);
+                  }
+                }}
+              >
+                {selectedCategories.length === POPULAR_KEYWORDS.length ? "전체 해제" : "전체 선택"}
+              </button>
               {POPULAR_KEYWORDS.map((category) => (
                 <button
                   key={category}
@@ -320,18 +326,6 @@ export default function NewsPage() {
                   {category}
                 </button>
               ))}
-              {selectedCategories.length > 0 && (
-                <button
-                  type="button"
-                  className="category-button clear-button"
-                  onClick={() => {
-                    setSelectedCategories([]);
-                    setQuery("");
-                  }}
-                >
-                  전체 해제
-                </button>
-              )}
             </div>
           </div>
           <form onSubmit={handleSearch}>
@@ -402,34 +396,17 @@ export default function NewsPage() {
                         ? `"${query}" 검색 결과`
                         : `${activeTab} 카테고리 뉴스`} ({newsByCategory[activeTab].length}개)
                   </h2>
-                  {Array.from(selectedNews).filter(key => key.startsWith(`${activeTab}:`)).length > 0 && (
-                    <div className="selected-count">
-                      {Array.from(selectedNews).filter(key => key.startsWith(`${activeTab}:`)).length}개 선택됨
-                    </div>
-                  )}
                 </div>
                 <div className="news-list">
                   {newsByCategory[activeTab].map((item, index) => {
-                    const key = `${activeTab}:${index}`;
                     return (
                       <div
                         key={index}
-                        className={`news-card ${selectedNews.has(key) ? "selected" : ""}`}
-                        onClick={() => toggleSelect(activeTab, index)}
+                        className="news-card"
                       >
                         <div className="news-card-header">
-                          <input
-                            type="checkbox"
-                            checked={selectedNews.has(key)}
-                            onChange={() => toggleSelect(activeTab, index)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="news-checkbox"
-                          />
                           <div className="news-title-wrapper">
                             <h3 className="news-title">{item.title}</h3>
-                            {item.category && (
-                              <span className="news-category">{item.category}</span>
-                            )}
                           </div>
                         </div>
                         <p className="news-description">{item.description}</p>

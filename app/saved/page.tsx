@@ -114,13 +114,26 @@ export default function SavedPage() {
     };
   };
 
+  const handleRefresh = () => {
+    window.location.reload();
+  };
+
   return (
     <main className="container">
       <header className="header">
         <h1>저장된 영상</h1>
-        <a href="/" className="back-link">
-          ← 검색으로 돌아가기
-        </a>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <a href="/" className="back-link">
+            ← 검색으로 돌아가기
+          </a>
+          <button
+            onClick={handleRefresh}
+            className="refresh-button"
+            title="페이지 새로고침"
+          >
+            🔄 새로고침
+          </button>
+        </div>
       </header>
 
       {isLoading && (

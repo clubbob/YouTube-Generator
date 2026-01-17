@@ -46,6 +46,13 @@ export default function SubProcessPage({ params }: { params: { step: string; sub
       <div className="hero-section">
         <div className="back-buttons">
           <BackButton />
+          <button
+            onClick={() => window.location.reload()}
+            className="refresh-button"
+            title="페이지 새로고침"
+          >
+            🔄 새로고침
+          </button>
         </div>
         <h1>{data.title}</h1>
         <p>{data.description}</p>
