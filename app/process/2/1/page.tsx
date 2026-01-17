@@ -204,7 +204,7 @@ export default function NewsPage() {
       // 검색어만 있는 경우: 검색어로만 검색
       else if (query.trim()) {
         const searchItems = await fetchNews(query.trim(), 10, "sim"); // 인기순, 10개
-        newsByCategoryMap["검색 결과"] = searchItems.map((item) => ({
+        newsByCategoryMap["검색 결과"] = searchItems.map((item: NewsItem) => ({
           ...item,
           category: undefined,
         }));
