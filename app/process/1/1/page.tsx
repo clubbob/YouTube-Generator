@@ -8,6 +8,8 @@ export default function ChannelConceptPage() {
   // 새로운 항목 구조
   const [channelPurpose, setChannelPurpose] = useState("복잡한 뉴스와 정보를 60초 안에 쉽게 이해하게 만드는 채널. 단순 정보 전달이 아니라 원인, 구조, 맥락을 연결하여 시청자의 사고를 정리해주는 해석형 채널");
 
+  const [channelKeywords, setChannelKeywords] = useState("뉴스 해석, 시사 분석, 정보 정리, 트렌드 분석, 경제 뉴스, 시사 뉴스, 뉴스 요약, 인사이트, 맥락 이해");
+
   const [coreTargetAudience, setCoreTargetAudience] = useState("20-30대 직장인 및 대학생. 경제, 투자, 시사, 트렌드에 관심이 있지만 정보 과부하로 인해 핵심만 빠르게 알고 싶어하는 사람들");
 
   const [mainViewingSituation, setMainViewingSituation] = useState("출퇴근 시간, 점심 시간, 잠들기 전 등 짧은 시간에 핵심 정보를 얻고 싶을 때. 모바일 환경에서 YouTube Shorts로 시청");
@@ -44,31 +46,34 @@ export default function ChannelConceptPage() {
 1. 채널 목적
 ${channelPurpose}
 
-2. 핵심 타겟 시청자
+2. 채널 키워드
+${channelKeywords}
+
+3. 핵심 타겟 시청자
 ${coreTargetAudience}
 
-3. 주요 시청 상황
+4. 주요 시청 상황
 ${mainViewingSituation}
 
-4. 시청자 핵심 문제
+5. 시청자 핵심 문제
 ${viewerCoreProblem}
 
-5. 콘텐츠 주제 범위
+6. 콘텐츠 주제 범위
 ${contentTopicRange}
 
-6. 영상 전개 구조
+7. 영상 전개 구조
 ${videoStructure}
 
-7. 채널 말투 및 분위기
+8. 채널 말투 및 분위기
 ${channelToneAndMood}
 
-8. 채널 캐릭터 포지션
+9. 채널 캐릭터 포지션
 ${channelCharacterPosition}
 
-9. 반복 시청 유도 장치
+10. 반복 시청 유도 장치
 ${repeatViewingInducement}
 
-10. 제작 지속 가능
+11. 제작 지속 가능
 ${productionSustainability}
 
 [출력 요구사항]
@@ -131,6 +136,18 @@ ${productionSustainability}
                 onChange={(e) => setChannelPurpose(e.target.value)}
                 rows={3}
                 className="form-textarea"
+              />
+            </div>
+
+            <div className="form-row form-row-textarea">
+              <label htmlFor="channel-keywords" className="form-label">채널 키워드</label>
+              <textarea
+                id="channel-keywords"
+                value={channelKeywords}
+                onChange={(e) => setChannelKeywords(e.target.value)}
+                rows={2}
+                className="form-textarea"
+                placeholder="채널과 관련된 주요 키워드를 쉼표로 구분하여 입력하세요 (예: 뉴스 해석, 시사 분석, 정보 정리)"
               />
             </div>
 

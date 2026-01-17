@@ -53,18 +53,6 @@ const channelCreationSteps = [
   },
   {
     step: 5,
-    title: "채널 커스터마이징",
-    description: "채널을 더욱 전문적으로 보이게 만드는 추가 설정입니다.",
-    details: [
-      "채널 트레일러 설정: 신규 시청자를 위한 소개 영상",
-      "섹션 구성: 인기 영상, 최신 영상 등으로 채널 정리",
-      "소셜 링크 추가: 웹사이트, SNS 링크 연결",
-      "채널 URL 커스터마이징: 기억하기 쉬운 주소 설정 (조건부)",
-    ],
-    icon: "⚙️",
-  },
-  {
-    step: 6,
     title: "첫 영상 업로드 준비",
     description: "채널이 준비되었으니 이제 첫 영상을 업로드할 차례입니다.",
     details: [
@@ -130,40 +118,6 @@ export default function CreateChannelPage() {
                 </div>
               </div>
             ))}
-          </div>
-
-          <div className="guide-tips">
-            <h3 className="tips-title">💡 유용한 팁</h3>
-            <div className="tips-grid">
-              <div className="tip-card">
-                <h4 className="tip-card-title">채널 이름 선택</h4>
-                <p className="tip-card-text">
-                  채널 컨셉 설정에서 정한 채널 이름 후보 중에서 선택하거나, 
-                  검색하기 쉽고 기억하기 쉬운 이름을 선택하세요.
-                </p>
-              </div>
-              <div className="tip-card">
-                <h4 className="tip-card-title">첫인상이 중요합니다</h4>
-                <p className="tip-card-text">
-                  채널 아트와 프로필 이미지는 채널의 첫인상을 결정합니다. 
-                  채널 컨셉에 맞는 전문적인 디자인을 사용하세요.
-                </p>
-              </div>
-              <div className="tip-card">
-                <h4 className="tip-card-title">일관성 유지</h4>
-                <p className="tip-card-text">
-                  채널 설명, 영상 스타일, 썸네일 디자인 등에서 일관된 브랜딩을 유지하면 
-                  시청자들이 채널을 쉽게 인식할 수 있습니다.
-                </p>
-              </div>
-              <div className="tip-card">
-                <h4 className="tip-card-title">검색 최적화</h4>
-                <p className="tip-card-text">
-                  채널 설명에 관련 키워드를 자연스럽게 포함하고, 
-                  영상 제목과 설명에도 검색어를 고려하여 작성하세요.
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </section>
