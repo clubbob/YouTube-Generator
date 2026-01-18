@@ -6,7 +6,7 @@ import BackButton from "@/components/BackButton";
 
 export default function ChannelConceptPage() {
   // 새로운 항목 구조
-  const [channelPurpose, setChannelPurpose] = useState("복잡한 뉴스와 정보를 60초 안에 쉽게 이해하게 만드는 채널. 단순 정보 전달이 아니라 원인, 구조, 맥락을 연결하여 시청자의 사고를 정리해주는 해석형 채널");
+  const [channelPurpose, setChannelPurpose] = useState("복잡한 뉴스와 정보를 3분 안에 쉽게 이해하게 만드는 채널. 단순 정보 전달이 아니라 원인, 구조, 맥락을 연결하여 시청자의 사고를 정리해주는 해석형 채널");
 
   const [channelKeywords, setChannelKeywords] = useState("뉴스 해석, 시사 분석, 정보 정리, 트렌드 분석, 경제 뉴스, 시사 뉴스, 뉴스 요약, 인사이트, 맥락 이해");
 
@@ -18,7 +18,7 @@ export default function ChannelConceptPage() {
 
   const [contentTopicRange, setContentTopicRange] = useState("시사, 정치, 경제, 사회, 국제, 문화, 연예, 스포츠, IT, 과학, 부동산, 건강, AI, 금융, 교육, 환경, 게임, 음식 등 트렌드 기반 정보 전반");
 
-  const [videoStructure, setVideoStructure] = useState("오프닝 훅 (3초): 질문이나 관점으로 시작 → 핵심 설명 (50초): 사실 → 원인 → 구조 → 맥락 순서로 전개 → 인사이트 요약 (5초): 한 문장으로 정리 → 마무리 (2초): 반복 시청 유도 멘트");
+  const [videoStructure, setVideoStructure] = useState("오프닝 훅 (9초): 질문이나 관점으로 시작 → 핵심 설명 (153초): 사실 → 원인 → 구조 → 맥락 순서로 전개 → 인사이트 요약 (9초): 한 문장으로 정리 → 마무리 (9초): 반복 시청 유도 멘트");
 
   const [channelToneAndMood, setChannelToneAndMood] = useState("차분하고 분석적인 말투. 감정적 선동이나 판단 강요 없이, 이해를 확장하고 사고를 정리할 수 있도록 설명하는 톤");
 

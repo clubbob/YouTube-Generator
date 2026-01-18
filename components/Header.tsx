@@ -23,9 +23,8 @@ const menuItems: SubMenuItem[] = [
     title: "2. 영상 대본 만들기",
     href: "/process/2",
     subItems: [
-      { title: "2-1. 인기 뉴스 조회", href: "/process/2/1" },
-      { title: "2-2. 인기 영상 조회", href: "/trending" },
-      { title: "2-3. 대본 만들기 (AI Prompt)", href: "/process/2/3" },
+      { title: "2-1. 인기 영상 벤치마킹", href: "/trending" },
+      { title: "2-2. 대본 만들기", href: "/process/2/3" },
     ],
   },
   {

@@ -121,7 +121,7 @@ export default function TrendingPage() {
             🔄 새로고침
           </button>
         </div>
-        <h1>인기 영상 조회</h1>
+        <h1>인기 영상 벤치마킹</h1>
       </div>
 
       <div className="search-section">

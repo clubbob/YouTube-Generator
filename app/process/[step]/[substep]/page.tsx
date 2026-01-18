@@ -15,12 +15,8 @@ const subProcessData: { [key: string]: { [key: string]: { title: string; descrip
     },
   },
   "2": {
-    "1": {
-      title: "인기 뉴스 조회",
-      description: "최신 뉴스와 트렌드를 조회하여 영상 주제를 선정합니다",
-    },
     "3": {
-      title: "대본 만들기 (AI Prompt)",
+      title: "대본 만들기",
       description: "AI를 활용하여 영상 대본을 자동으로 생성합니다",
     },
   },

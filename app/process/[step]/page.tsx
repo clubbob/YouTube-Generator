@@ -16,9 +16,8 @@ const processData: { [key: string]: { title: string; description: string; subIte
     title: "영상 대본 만들기",
     description: "뉴스 조회와 벤치마킹을 통해 영상 대본을 작성합니다",
     subItems: [
-      { title: "인기 뉴스 조회", href: "/process/2/1" },
-      { title: "인기 영상 조회", href: "/trending" },
-      { title: "대본 만들기 (AI Prompt)", href: "/process/2/3" },
+      { title: "인기 영상 벤치마킹", href: "/trending" },
+      { title: "대본 만들기", href: "/process/2/3" },
     ],
   },
   "3": {
