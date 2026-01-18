@@ -30,6 +30,14 @@ const processSteps = [
     href: "/process/3",
     subItems: [],
   },
+  {
+    number: 4,
+    title: "영상 샘플 보기",
+    description: "실제로 제작된 영상 샘플을 확인합니다",
+    href: "https://www.youtube.com/@%EC%95%A4%EB%94%94%EB%A6%AC%EC%8A%A4%ED%8A%B8",
+    subItems: [],
+    external: true,
+  },
 ];
 
 export default function Home() {
@@ -66,20 +74,30 @@ export default function Home() {
       </section>
 
       <section className="process-section">
-        <h2 className="process-section-title">유튜브 영상 제작 프로세스</h2>
+        <h2 className="process-section-title">유튜브 영상 제작 가이드</h2>
         <p className="process-section-description">
-          채널 기획부터 영상 제작까지, 유튜브 크리에이터를 위한 3단계 제작 프로세스를 제공합니다.
+          채널 기획부터 영상 제작까지, 유튜브 크리에이터를 위한 4단계 제작 프로세스를 제공합니다.
         </p>
         <div className="process-grid">
           {processSteps.map((step) => (
           <div key={step.number} className="process-card">
-            <Link href={step.href} className="process-card-link">
-              <div className="card-header">
-                <span className="card-number">{step.number}</span>
-                <h3 className="card-title">{step.title}</h3>
-              </div>
-              <p className="card-description">{step.description}</p>
-            </Link>
+            {step.external ? (
+              <a href={step.href} target="_blank" rel="noopener noreferrer" className="process-card-link">
+                <div className="card-header">
+                  <span className="card-number">{step.number}</span>
+                  <h3 className="card-title">{step.title}</h3>
+                </div>
+                <p className="card-description">{step.description}</p>
+              </a>
+            ) : (
+              <Link href={step.href} className="process-card-link">
+                <div className="card-header">
+                  <span className="card-number">{step.number}</span>
+                  <h3 className="card-title">{step.title}</h3>
+                </div>
+                <p className="card-description">{step.description}</p>
+              </Link>
+            )}
             {step.subItems.length > 0 && (
               <div className="card-subitems">
                 {step.subItems.map((subItem, index) => (

@@ -31,6 +31,10 @@ const menuItems: SubMenuItem[] = [
     title: "3. 영상 만들기",
     href: "/process/3",
   },
+  {
+    title: "4. 영상 샘플 보기",
+    href: "https://www.youtube.com/@%EC%95%A4%EB%94%94%EB%A6%AC%EC%8A%A4%ED%8A%B8",
+  },
 ];
 
 export default function Header() {
@@ -95,7 +99,7 @@ export default function Header() {
               }}
             >
               <span className="nav-link main-menu-link">
-                유튜브 영상 제작 프로세스
+                유튜브 영상 제작 가이드
               </span>
             </div>
             {isMenuOpen && (
@@ -134,22 +138,38 @@ export default function Header() {
                     }}
                   >
                     {item.href ? (
-                      <Link
-                        href={item.href}
-                        className={`menu-link ${pathname === item.href ? "active" : ""}`}
-                        onClick={(e) => {
-                          if (window.innerWidth <= 768 && item.subItems) {
-                            e.preventDefault();
-                            setMobileOpenIndex(mobileOpenIndex === index ? null : index);
-                          } else {
+                      item.href.startsWith("http") ? (
+                        <a
+                          href={item.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="menu-link"
+                          onClick={() => {
                             setMobileMenuOpen(false);
                             setIsMenuOpen(false);
-                          }
-                        }}
-                      >
-                        {item.title}
-                        {item.subItems && <span className="arrow">▶</span>}
-                      </Link>
+                          }}
+                        >
+                          {item.title}
+                          {item.subItems && <span className="arrow">▶</span>}
+                        </a>
+                      ) : (
+                        <Link
+                          href={item.href}
+                          className={`menu-link ${pathname === item.href ? "active" : ""}`}
+                          onClick={(e) => {
+                            if (window.innerWidth <= 768 && item.subItems) {
+                              e.preventDefault();
+                              setMobileOpenIndex(mobileOpenIndex === index ? null : index);
+                            } else {
+                              setMobileMenuOpen(false);
+                              setIsMenuOpen(false);
+                            }
+                          }}
+                        >
+                          {item.title}
+                          {item.subItems && <span className="arrow">▶</span>}
+                        </Link>
+                      )
                     ) : (
                       <div 
                         className="menu-link"

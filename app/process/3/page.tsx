@@ -133,7 +133,7 @@ export default function VideoGenerationPage() {
           <div className="guide-tips">
             <h3 className="tips-title">💡 활용 팁</h3>
             <ul className="tips-list">
-              <li><strong>짧고 간결하게:</strong> 쇼츠나 릴스용이라면 핵심 메시지를 15~60초 내외에 전달하세요.</li>
+              <li><strong>짧고 간결하게:</strong> 쇼츠나 릴스용이라면 핵심 메시지를 60초 내외에 전달하세요.</li>
               <li><strong>비주얼 구성 활용:</strong> 텍스트 강조, 이미지 클립, 효과음/음악으로 분위기를 살리면 영상이 훨씬 풍성해 보입니다.</li>
               <li><strong>자막 필수:</strong> 모바일에서 소리 없이 보는 경우에도 이해할 수 있도록 자막이 잘 보이게 작성하세요.</li>
               <li><strong>스타일 템플릿 활용:</strong> 이미 있는 템플릿을 활용하면 디자인 고민 절약 & 빠른 제작 가능합니다.</li>
