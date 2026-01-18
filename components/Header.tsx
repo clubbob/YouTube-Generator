@@ -28,20 +28,8 @@ const menuItems: SubMenuItem[] = [
     ],
   },
   {
-    title: "3. 영상 목소리 만들기 (AI)",
+    title: "3. 영상 만들기",
     href: "/process/3",
-  },
-  {
-    title: "4. 영상 동영상 만들기 (AI)",
-    href: "/process/4",
-  },
-  {
-    title: "5. 영상 유튜브 올리기",
-    href: "/process/5",
-  },
-  {
-    title: "6. 영상 트레픽 보기",
-    href: "/process/6",
   },
 ];
 

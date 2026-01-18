@@ -21,23 +21,8 @@ const processData: { [key: string]: { title: string; description: string; subIte
     ],
   },
   "3": {
-    title: "영상 목소리 만들기 (AI)",
-    description: "AI를 활용하여 영상 목소리를 생성합니다",
-    subItems: [],
-  },
-  "4": {
-    title: "영상 동영상 만들기 (AI)",
-    description: "AI를 활용하여 영상 동영상을 생성합니다",
-    subItems: [],
-  },
-  "5": {
-    title: "영상 유튜브 올리기",
-    description: "완성된 영상을 유튜브에 업로드합니다",
-    subItems: [],
-  },
-  "6": {
-    title: "영상 트레픽 보기",
-    description: "업로드한 영상의 트래픽과 통계를 확인합니다",
+    title: "영상 만들기",
+    description: "AI를 활용하여 영상을 생성합니다",
     subItems: [],
   },
 };
@@ -45,6 +30,20 @@ const processData: { [key: string]: { title: string; description: string; subIte
 export default function ProcessStepPage({ params }: { params: { step: string } }) {
   const step = params.step;
   const data = processData[step];
+
+  // step이 "3"이면 일반 페이지를 렌더링하지 않음
+  // Next.js는 정적 라우트(app/process/3/page.tsx)가 동적 라우트보다 우선순위가 높음
+  // 빌드 캐시를 삭제하고 개발 서버를 재시작하면 정적 라우트가 우선됨
+  if (step === "3") {
+    return (
+      <main className="main-page">
+        <div className="hero-section">
+          <h1>페이지를 찾을 수 없습니다</h1>
+          <Link href="/process/3">영상 만들기 페이지로 이동</Link>
+        </div>
+      </main>
+    );
+  }
 
   if (!data) {
     return (

@@ -25,30 +25,9 @@ const processSteps = [
   },
   {
     number: 3,
-    title: "영상 목소리 만들기 (AI)",
-    description: "AI를 활용하여 영상 목소리를 생성합니다",
+    title: "영상 만들기",
+    description: "AI를 활용하여 영상을 생성합니다",
     href: "/process/3",
-    subItems: [],
-  },
-  {
-    number: 4,
-    title: "영상 동영상 만들기 (AI)",
-    description: "AI를 활용하여 영상 동영상을 생성합니다",
-    href: "/process/4",
-    subItems: [],
-  },
-  {
-    number: 5,
-    title: "영상 유튜브 올리기",
-    description: "완성된 영상을 유튜브에 업로드합니다",
-    href: "/process/5",
-    subItems: [],
-  },
-  {
-    number: 6,
-    title: "영상 트레픽 보기",
-    description: "업로드한 영상의 트래픽과 통계를 확인합니다",
-    href: "/process/6",
     subItems: [],
   },
 ];
@@ -89,7 +68,7 @@ export default function Home() {
       <section className="process-section">
         <h2 className="process-section-title">유튜브 영상 제작 프로세스</h2>
         <p className="process-section-description">
-          채널 기획부터 영상 업로드까지, 유튜브 크리에이터를 위한 6단계 제작 프로세스를 제공합니다.
+          채널 기획부터 영상 제작까지, 유튜브 크리에이터를 위한 3단계 제작 프로세스를 제공합니다.
         </p>
         <div className="process-grid">
           {processSteps.map((step) => (
