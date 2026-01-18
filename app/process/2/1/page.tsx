@@ -124,6 +124,8 @@ export default function NewsPage() {
   // 페이지 로드 시 초기화만 수행 (자동 검색 및 카테고리 선택 제거)
   useEffect(() => {
     setIsInitialLoad(false);
+    // 페이지 상단으로 스크롤
+    window.scrollTo(0, 0);
   }, []);
 
   // 검색 실행 함수 (공통 로직) - 검색어로 검색

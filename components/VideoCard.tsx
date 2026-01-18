@@ -122,19 +122,10 @@ export default function VideoCard({ video, onSave, isSaved, rank }: VideoCardPro
             target="_blank"
             rel="noopener noreferrer"
             className="watch-button"
+            style={{ width: "100%" }}
           >
             ▶ YouTube에서 보기
           </a>
-
-          {onSave && (
-            <button
-              className={`save-button ${isSaved ? "saved" : ""}`}
-              onClick={() => onSave(video)}
-              disabled={isSaved}
-            >
-              {isSaved ? "저장됨" : "저장"}
-            </button>
-          )}
         </div>
         </div>
       </div>

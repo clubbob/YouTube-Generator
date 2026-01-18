@@ -17,8 +17,8 @@ interface SearchFormProps {
 export default function SearchForm({ onSearch, isLoading }: SearchFormProps) {
   const [query, setQuery] = useState("");
   const [timeframeDays, setTimeframeDays] = useState<7 | 30 | 90>(30);
-  const [subscriberMax, setSubscriberMax] = useState("300,000");
-  const [minViews, setMinViews] = useState("20,000");
+  const [subscriberMax, setSubscriberMax] = useState("500,000");
+  const [minViews, setMinViews] = useState("100,000");
   const [minDurationSec, setMinDurationSec] = useState("60");
   const [contentType, setContentType] = useState<"shorts_like" | "all">("all");
 
