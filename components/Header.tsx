@@ -13,7 +13,6 @@ interface SubMenuItem {
 const menuItems: SubMenuItem[] = [
   {
     title: "1. 유튜브 채널 만들기",
-    href: "/process/1",
     subItems: [
       { title: "1-1. 채널 컨셉 설정", href: "/process/1/1" },
       { title: "1-2. 채널 만들기", href: "/process/1/2" },
@@ -21,7 +20,6 @@ const menuItems: SubMenuItem[] = [
   },
   {
     title: "2. 영상 대본 만들기",
-    href: "/process/2",
     subItems: [
       { title: "2-1. 인기 영상 벤치마킹", href: "/trending" },
       { title: "2-2. 대본 만들기", href: "/process/2/3" },
@@ -30,10 +28,16 @@ const menuItems: SubMenuItem[] = [
   {
     title: "3. 영상 만들기",
     href: "/process/3",
+    subItems: [
+      { title: "3-1. 브르 (Vrew) AI 서비스 활용", href: "/process/3" },
+    ],
   },
   {
     title: "4. 영상 샘플 보기",
     href: "https://www.youtube.com/@%EC%95%A4%EB%94%94%EB%A6%AC%EC%8A%A4%ED%8A%B8",
+    subItems: [
+      { title: "4-1. 앤디리스트 채널 보기", href: "https://www.youtube.com/@%EC%95%A4%EB%94%94%EB%A6%AC%EC%8A%A4%ED%8A%B8" },
+    ],
   },
 ];
 
@@ -80,8 +84,9 @@ export default function Header() {
             }}
             onMouseLeave={(e) => {
               if (window.innerWidth > 768) {
-                const relatedTarget = e.relatedTarget as HTMLElement;
+                const relatedTarget = e.relatedTarget;
                 if (!relatedTarget || 
+                    !(relatedTarget instanceof HTMLElement) ||
                     (!relatedTarget.closest('.main-menu') && 
                      !relatedTarget.closest('.menu-dropdown'))) {
                   setIsMenuOpen(false);
@@ -112,8 +117,9 @@ export default function Header() {
                 }}
                 onMouseLeave={(e) => {
                   if (window.innerWidth > 768) {
-                    const relatedTarget = e.relatedTarget as HTMLElement;
+                    const relatedTarget = e.relatedTarget;
                     if (!relatedTarget || 
+                        !(relatedTarget instanceof HTMLElement) ||
                         (!relatedTarget.closest('.main-menu') && 
                          !relatedTarget.closest('.menu-dropdown'))) {
                       setIsMenuOpen(false);
@@ -144,9 +150,14 @@ export default function Header() {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="menu-link"
-                          onClick={() => {
-                            setMobileMenuOpen(false);
-                            setIsMenuOpen(false);
+                          onClick={(e) => {
+                            if (item.subItems && window.innerWidth <= 768) {
+                              e.preventDefault();
+                              setMobileOpenIndex(mobileOpenIndex === index ? null : index);
+                            } else if (!item.subItems) {
+                              setMobileMenuOpen(false);
+                              setIsMenuOpen(false);
+                            }
                           }}
                         >
                           {item.title}
@@ -160,7 +171,7 @@ export default function Header() {
                             if (window.innerWidth <= 768 && item.subItems) {
                               e.preventDefault();
                               setMobileOpenIndex(mobileOpenIndex === index ? null : index);
-                            } else {
+                            } else if (!item.subItems) {
                               setMobileMenuOpen(false);
                               setIsMenuOpen(false);
                             }
@@ -194,8 +205,9 @@ export default function Header() {
                         }}
                         onMouseLeave={(e) => {
                           if (window.innerWidth > 768) {
-                            const relatedTarget = e.relatedTarget as HTMLElement;
+                            const relatedTarget = e.relatedTarget;
                             if (!relatedTarget || 
+                                !(relatedTarget instanceof HTMLElement) ||
                                 (!relatedTarget.closest('.menu-item') && 
                                  !relatedTarget.closest('.submenu'))) {
                               setHoveredIndex(null);
@@ -204,21 +216,38 @@ export default function Header() {
                         }}
                       >
                         {item.subItems.map((subItem, subIndex) => (
-                          <Link
-                            key={subIndex}
-                            href={subItem.href || "#"}
-                            className={`submenu-item ${pathname === subItem.href ? "active" : ""}`}
-                            onClick={(e) => {
-                              if (!subItem.href) {
-                                e.preventDefault();
-                              }
-                              setMobileMenuOpen(false);
-                              setIsMenuOpen(false);
-                              setMobileOpenIndex(null);
-                            }}
-                          >
-                            {subItem.title}
-                          </Link>
+                          subItem.href && subItem.href.startsWith("http") ? (
+                            <a
+                              key={subIndex}
+                              href={subItem.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="submenu-item"
+                              onClick={() => {
+                                setMobileMenuOpen(false);
+                                setIsMenuOpen(false);
+                                setMobileOpenIndex(null);
+                              }}
+                            >
+                              {subItem.title}
+                            </a>
+                          ) : (
+                            <Link
+                              key={subIndex}
+                              href={subItem.href || "#"}
+                              className={`submenu-item ${pathname === subItem.href ? "active" : ""}`}
+                              onClick={(e) => {
+                                if (!subItem.href) {
+                                  e.preventDefault();
+                                }
+                                setMobileMenuOpen(false);
+                                setIsMenuOpen(false);
+                                setMobileOpenIndex(null);
+                              }}
+                            >
+                              {subItem.title}
+                            </Link>
+                          )
                         ))}
                       </div>
                     )}

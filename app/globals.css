@@ -202,6 +202,7 @@ header.header {
   transition: all 0.2s;
   border-left: 3px solid transparent;
   position: relative;
+  white-space: nowrap;
 }
 
 .menu-link:hover {
@@ -230,7 +231,7 @@ header.header {
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  min-width: 240px;
+  min-width: 300px;
   padding: 8px 0;
   margin-left: 4px;
   z-index: 1001;
@@ -258,6 +259,7 @@ header.header {
   transition: all 0.2s;
   border-left: 3px solid transparent;
   text-align: left;
+  white-space: nowrap;
 }
 
 .submenu-item:hover {
@@ -720,6 +722,15 @@ header.header {
 
 .process-card-link:hover {
   transform: translateY(-2px);
+}
+
+.process-card-link-disabled {
+  cursor: default;
+  pointer-events: none;
+}
+
+.process-card-link-disabled:hover {
+  transform: none;
 }
 
 .process-card:hover {

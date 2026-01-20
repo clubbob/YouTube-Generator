@@ -2,7 +2,23 @@
 
 import Link from "next/link";
 
-const processSteps = [
+interface SubItem {
+  title: string;
+  available: boolean;
+  href: string;
+  external?: boolean;
+}
+
+interface ProcessStep {
+  number: number;
+  title: string;
+  description: string;
+  href: string;
+  subItems: SubItem[];
+  external?: boolean;
+}
+
+const processSteps: ProcessStep[] = [
   {
     number: 1,
     title: "유튜브 채널 만들기",
@@ -28,14 +44,18 @@ const processSteps = [
     title: "영상 만들기",
     description: "AI를 활용하여 영상을 생성합니다",
     href: "/process/3",
-    subItems: [],
+    subItems: [
+      { title: "브르 (Vrew) AI 서비스 활용", available: true, href: "/process/3" },
+    ],
   },
   {
     number: 4,
     title: "영상 샘플 보기",
     description: "실제로 제작된 영상 샘플을 확인합니다",
     href: "https://www.youtube.com/@%EC%95%A4%EB%94%94%EB%A6%AC%EC%8A%A4%ED%8A%B8",
-    subItems: [],
+    subItems: [
+      { title: "앤디리스트 채널 보기", available: true, href: "https://www.youtube.com/@%EC%95%A4%EB%94%94%EB%A6%AC%EC%8A%A4%ED%8A%B8", external: true },
+    ],
     external: true,
   },
 ];
@@ -81,7 +101,16 @@ export default function Home() {
         <div className="process-grid">
           {processSteps.map((step) => (
           <div key={step.number} className="process-card">
-            {step.external ? (
+            {step.external && step.subItems.length > 0 ? (
+              // external이면서 서브메뉴가 있는 경우 메인 카드 클릭 비활성화
+              <div className="process-card-link process-card-link-disabled">
+                <div className="card-header">
+                  <span className="card-number">{step.number}</span>
+                  <h3 className="card-title">{step.title}</h3>
+                </div>
+                <p className="card-description">{step.description}</p>
+              </div>
+            ) : step.external ? (
               <a href={step.href} target="_blank" rel="noopener noreferrer" className="process-card-link">
                 <div className="card-header">
                   <span className="card-number">{step.number}</span>
@@ -89,6 +118,15 @@ export default function Home() {
                 </div>
                 <p className="card-description">{step.description}</p>
               </a>
+            ) : step.subItems.length > 0 ? (
+              // 서브메뉴가 있는 경우 메인 카드 클릭 비활성화
+              <div className="process-card-link process-card-link-disabled">
+                <div className="card-header">
+                  <span className="card-number">{step.number}</span>
+                  <h3 className="card-title">{step.title}</h3>
+                </div>
+                <p className="card-description">{step.description}</p>
+              </div>
             ) : (
               <Link href={step.href} className="process-card-link">
                 <div className="card-header">
@@ -102,15 +140,29 @@ export default function Home() {
               <div className="card-subitems">
                 {step.subItems.map((subItem, index) => (
                   subItem.available && subItem.href ? (
-                    <Link
-                      key={index}
-                      href={subItem.href}
-                      className="subitem-link"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <span className="subitem-dot">•</span>
-                      <span className="subitem-text">{subItem.title}</span>
-                    </Link>
+                    subItem.external ? (
+                      <a
+                        key={index}
+                        href={subItem.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="subitem-link"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <span className="subitem-dot">•</span>
+                        <span className="subitem-text">{subItem.title}</span>
+                      </a>
+                    ) : (
+                      <Link
+                        key={index}
+                        href={subItem.href}
+                        className="subitem-link"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <span className="subitem-dot">•</span>
+                        <span className="subitem-text">{subItem.title}</span>
+                      </Link>
+                    )
                   ) : (
                     <div key={index} className="subitem-disabled">
                       <span className="subitem-dot">•</span>
