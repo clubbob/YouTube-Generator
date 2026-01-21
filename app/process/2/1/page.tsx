@@ -13,6 +13,33 @@ interface NewsItem {
   category?: string; // 카테고리 정보
 }
 
+type ContentMode =
+  | "default"
+  | "early"
+  | "data"
+  | "life"
+  | "conflict"
+  | "forecast"
+  | "global"
+  | "structure"
+  | "human"
+  | "factcheck"
+  | "ai";
+
+const CONTENT_MODE_LABELS: Record<ContentMode, string> = {
+  default: "기본",
+  early: "아직 뜨기 전(초기 이슈)",
+  data: "숫자·데이터",
+  life: "생활 체감",
+  conflict: "갈등 구조",
+  forecast: "전망·변수",
+  global: "해외→국내 영향",
+  structure: "구조/제도 해석",
+  human: "사람·현장 스토리",
+  factcheck: "팩트체크/오해 교정",
+  ai: "AI/기술",
+};
+
 // 인기 뉴스 자동 로드용 키워드 - 넓은 범위의 인기 카테고리
 // 네이버 뉴스 탭의 다양한 인기 뉴스를 수집하기 위한 키워드들
 const POPULAR_KEYWORDS = [
@@ -44,13 +71,21 @@ export default function NewsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [useInterestRerank, setUseInterestRerank] = useState(true);
+  const [contentMode, setContentMode] = useState<ContentMode>("default");
 
   // 뉴스 검색 함수
   const fetchNews = async (searchQuery: string, display: number = 20, sort: string = "sim") => {
     try {
-      const response = await fetch(
-        `/api/naver/news?query=${encodeURIComponent(searchQuery)}&display=${display}&sort=${sort}`
-      );
+      const params = new URLSearchParams({
+        query: searchQuery,
+        display: String(display),
+        sort,
+      });
+      if (useInterestRerank) params.set("rerank", "interest");
+      if (contentMode !== "default") params.set("mode", contentMode);
+
+      const response = await fetch(`/api/naver/news?${params.toString()}`);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -342,6 +377,43 @@ export default function NewsPage() {
               <button type="submit" className="news-search-button" disabled={isLoading}>
                 {isLoading ? "검색 중..." : "검색"}
               </button>
+            </div>
+            <div className="news-options">
+              <div className="news-option-group">
+                <div className="news-option-title">정렬 방식(랭킹)</div>
+                <div className="news-option-desc">
+                  같은 후보 기사들을 어떤 순서로 보여줄지 결정합니다.
+                </div>
+                <label className="news-option">
+                  <input
+                    type="checkbox"
+                    checked={useInterestRerank}
+                    onChange={(e) => setUseInterestRerank(e.target.checked)}
+                  />
+                  흥미도 우선 정렬
+                </label>
+              </div>
+
+              <div className="news-option-group">
+                <div className="news-option-title">큐레이션(콘텐츠 모드)</div>
+                <div className="news-option-desc">
+                  어떤 “종류”의 기사를 더 우선으로 모아볼지 선택합니다.
+                </div>
+                <label className="news-option">
+                  콘텐츠 모드
+                  <select
+                    className="news-mode-select"
+                    value={contentMode}
+                    onChange={(e) => setContentMode(e.target.value as ContentMode)}
+                  >
+                    {(Object.keys(CONTENT_MODE_LABELS) as ContentMode[]).map((m) => (
+                      <option key={m} value={m}>
+                        {CONTENT_MODE_LABELS[m]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
             </div>
           </form>
         </div>

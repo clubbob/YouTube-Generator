@@ -12,6 +12,33 @@ interface NewsItem {
   category?: string;
 }
 
+type ContentMode =
+  | "default"
+  | "early"
+  | "data"
+  | "life"
+  | "conflict"
+  | "forecast"
+  | "global"
+  | "structure"
+  | "human"
+  | "factcheck"
+  | "ai";
+
+const CONTENT_MODE_LABELS: Record<ContentMode, string> = {
+  default: "기본",
+  early: "아직 뜨기 전(초기 이슈)",
+  data: "숫자·데이터",
+  life: "생활 체감",
+  conflict: "갈등 구조",
+  forecast: "전망·변수",
+  global: "해외→국내 영향",
+  structure: "구조/제도 해석",
+  human: "사람·현장 스토리",
+  factcheck: "팩트체크/오해 교정",
+  ai: "AI/기술",
+};
+
 // 인기 뉴스 자동 로드용 키워드
 const POPULAR_KEYWORDS = [
   "시사", "정치", "경제", "사회", "국제", "문화", "연예", "스포츠",
@@ -27,6 +54,8 @@ export default function ScriptGenerationPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedNews, setSelectedNews] = useState<NewsItem[]>([]);
+  const [useInterestRerank, setUseInterestRerank] = useState(true);
+  const [contentMode, setContentMode] = useState<ContentMode>("default");
 
   // 채널 컨셉 정보
   const [channelPurpose, setChannelPurpose] = useState("복잡한 뉴스와 정보를 3분 안에 쉽게 이해하게 만드는 채널. 단순 정보 전달이 아니라 원인, 구조, 맥락을 연결하여 시청자의 사고를 정리해주는 해석형 채널");
@@ -50,9 +79,15 @@ export default function ScriptGenerationPage() {
   // 뉴스 검색 함수
   const fetchNews = async (searchQuery: string, display: number = 20, sort: string = "sim") => {
     try {
-      const response = await fetch(
-        `/api/naver/news?query=${encodeURIComponent(searchQuery)}&display=${display}&sort=${sort}`
-      );
+      const params = new URLSearchParams({
+        query: searchQuery,
+        display: String(display),
+        sort,
+      });
+      if (useInterestRerank) params.set("rerank", "interest");
+      if (contentMode !== "default") params.set("mode", contentMode);
+
+      const response = await fetch(`/api/naver/news?${params.toString()}`);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -306,8 +341,16 @@ export default function ScriptGenerationPage() {
 [출력 요구사항]
 - 유튜브 영상 제목:
   * 30~40자 이내
-  * 정보 나열 금지
+  * 정보 나열 금지 (기사 제목처럼 쓰지 말 것)
+  * 제목이 '뉴스'처럼 보이면 구독이 멈춘다. **기사 냄새(헤드라인 톤)** 가 나면 실패다.
+  * 제목은 정보가 아니라 **질문**이어야 한다. (가능하면 물음표 ? 포함)
   * '왜 / 구조 / 이유 / 반복' 중 하나의 관점이 드러날 것
+  * ❌ 나쁜 제목 예시:
+    - 국제 금·은값 최고치 이유
+    - 트럼프 관세 발언 영향 분석
+  * ⭕ 좋은 제목 예시:
+    - 금값은 왜 정치 뉴스에 먼저 반응할까?
+    - 관세 뉴스가 나오면 자산은 왜 움직일까?
 - 전체 대본 분량:
   * 약 1500자
   * 자연스러운 구어체
@@ -427,6 +470,43 @@ export default function ScriptGenerationPage() {
                 <button type="submit" className="news-search-button" disabled={isLoading}>
                   {isLoading ? "검색 중..." : "검색"}
                 </button>
+              </div>
+              <div className="news-options">
+                <div className="news-option-group">
+                  <div className="news-option-title">정렬 방식(랭킹)</div>
+                  <div className="news-option-desc">
+                    같은 후보 기사들을 어떤 순서로 보여줄지 결정합니다.
+                  </div>
+                  <label className="news-option">
+                    <input
+                      type="checkbox"
+                      checked={useInterestRerank}
+                      onChange={(e) => setUseInterestRerank(e.target.checked)}
+                    />
+                    흥미도 우선 정렬
+                  </label>
+                </div>
+
+                <div className="news-option-group">
+                  <div className="news-option-title">큐레이션(콘텐츠 모드)</div>
+                  <div className="news-option-desc">
+                    어떤 “종류”의 기사를 더 우선으로 모아볼지 선택합니다.
+                  </div>
+                  <label className="news-option">
+                    콘텐츠 모드
+                    <select
+                      className="news-mode-select"
+                      value={contentMode}
+                      onChange={(e) => setContentMode(e.target.value as ContentMode)}
+                    >
+                      {(Object.keys(CONTENT_MODE_LABELS) as ContentMode[]).map((m) => (
+                        <option key={m} value={m}>
+                          {CONTENT_MODE_LABELS[m]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
               </div>
             </form>
           </div>
