@@ -76,6 +76,19 @@ export default function ScriptGenerationPage() {
     window.scrollTo(0, 0);
   }, []);
 
+  // 과거 버전 프롬프트에 남아있던 "출력 형식" 블록이 혹시 섞여 들어오더라도
+  // 화면에 노출되지 않도록 마지막에 한 번 정리합니다.
+  const sanitizeGeneratedPrompt = (text: string) => {
+    if (!text) return text;
+
+    // 예전 템플릿에서 사용하던 출력 형식 블록 제거
+    // (줄바꿈/공백 변형에 강하게 매칭)
+    const outputFormatBlock =
+      /-?\s*출력\s*형식\s*:\s*\r?\n\s*\[영상\s*제목\]\s*\r?\n\s*제목\s*작성\s*\r?\n\s*\[대본\]\s*\r?\n\s*대본\s*작성\s*/gim;
+
+    return text.replace(outputFormatBlock, "").trim();
+  };
+
   // 뉴스 검색 함수
   const fetchNews = async (searchQuery: string, display: number = 20, sort: string = "sim") => {
     try {
@@ -152,6 +165,12 @@ export default function ScriptGenerationPage() {
     
     setIsLoading(true);
     setError(null);
+    // 검색 조건이 바뀌면 기존 생성 프롬프트는 의미가 없어져서 자동 초기화
+    // 또한 기존에 선택한 뉴스(체크 상태)도 새 결과에 섞여 보일 수 있어 함께 초기화
+    setSelectedNews([]);
+    setVideoTopic("");
+    setGeneratedPrompt("");
+    setCopied(false);
 
     try {
       // 카테고리 선택이나 검색어 입력이 없으면 인기 뉴스 자동 조회
@@ -251,10 +270,14 @@ export default function ScriptGenerationPage() {
       if (isSelected) {
         // 같은 뉴스를 클릭하면 선택 해제
         setVideoTopic("");
+        setGeneratedPrompt("");
+        setCopied(false);
         return [];
       } else {
         // 새로운 뉴스를 선택하면 기존 선택을 해제하고 새로 선택
         setVideoTopic(news.title);
+        setGeneratedPrompt("");
+        setCopied(false);
         return [news];
       }
     });
@@ -368,13 +391,9 @@ export default function ScriptGenerationPage() {
   * 질문형
   * 약 60~80자
   * 구독·좋아요 문구 포함
-- 출력 형식:
-  [영상 제목]
-  제목 작성
-  [대본]
-  대본 작성`;
+`;
 
-    setGeneratedPrompt(prompt);
+    setGeneratedPrompt(sanitizeGeneratedPrompt(prompt));
     setCopied(false);
     setIsGenerating(false);
   };
