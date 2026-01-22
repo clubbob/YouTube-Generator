@@ -396,12 +396,40 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("[Naver News] API Error:", errorText);
+      console.error(`[Naver News] API Error (${response.status}):`, errorText);
+      
+      // Rate limit 등 특정 에러는 명확히 전달
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.errorCode === "012" || errorText.includes("Rate limit")) {
+          return NextResponse.json(
+            {
+              error: "네이버 API 요청 한도 초과",
+              message: "잠시 후 다시 시도해주세요. (Rate limit exceeded)",
+              items: [],
+              total: 0,
+            },
+            { status: 429 }
+          );
+        }
+      } catch {
+        // JSON 파싱 실패 시 그냥 진행
+      }
+      
       // API 실패 시 RSS 피드로 폴백
       return await fetchNewsFromRSS(query, display);
     }
 
     const data = await response.json();
+    
+    // 네이버 API 응답이 비어있거나 items가 없는 경우
+    if (!data || !data.items || data.items.length === 0) {
+      console.warn(`[Naver News] 검색어 "${query}"에 대한 결과가 없습니다.`);
+      return NextResponse.json<NaverNewsResponse>({
+        items: [],
+        total: 0,
+      });
+    }
     
     // 네이버 API 응답 형식 변환
     let items: NaverNewsItem[] = (data.items || []).map((item: any) => {

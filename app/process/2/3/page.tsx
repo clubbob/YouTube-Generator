@@ -56,6 +56,9 @@ export default function ScriptGenerationPage() {
   const [selectedNews, setSelectedNews] = useState<NewsItem[]>([]);
   const [useInterestRerank, setUseInterestRerank] = useState(true);
   const [contentMode, setContentMode] = useState<ContentMode>("default");
+  
+  // 지식 전달 대본 관련 상태
+  const [knowledgeTopic, setKnowledgeTopic] = useState("");
 
   // 채널 컨셉 정보
   const [channelPurpose, setChannelPurpose] = useState("복잡한 뉴스와 정보를 3분 안에 쉽게 이해하게 만드는 채널. 단순 정보 전달이 아니라 원인, 구조, 맥락을 연결하여 시청자의 사고를 정리해주는 해석형 채널");
@@ -103,13 +106,27 @@ export default function ScriptGenerationPage() {
       const response = await fetch(`/api/naver/news?${params.toString()}`);
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "뉴스 검색 중 오류가 발생했습니다.");
+        let errorMessage = "뉴스 검색 중 오류가 발생했습니다.";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        console.error(`[뉴스 검색 실패] ${searchQuery}:`, errorMessage);
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
+      
+      // items가 없거나 빈 배열인 경우도 체크
+      if (!data.items || data.items.length === 0) {
+        console.warn(`[뉴스 검색 결과 없음] ${searchQuery}: API는 성공했지만 결과가 비어있습니다.`);
+      }
+      
       return data.items || [];
     } catch (err: any) {
+      console.error(`[뉴스 검색 예외] ${searchQuery}:`, err.message || err);
       throw err;
     }
   };
@@ -138,13 +155,34 @@ export default function ScriptGenerationPage() {
       
       const groupedNews: { [key: string]: NewsItem[] } = {};
       
+      let successCount = 0;
+      let failCount = 0;
+      
       categoryResults.forEach((result, index) => {
         if (result.status === 'fulfilled') {
-          groupedNews[result.value.category] = result.value.items;
+          successCount++;
+          const items = result.value.items || [];
+          groupedNews[result.value.category] = items;
+          if (items.length === 0) {
+            console.warn(`키워드 "${keywordsToSearch[index]}" 검색 결과가 비어있습니다.`);
+          }
         } else {
+          failCount++;
+          const reason = result.reason?.message || result.reason || "알 수 없는 오류";
+          console.error(`키워드 "${keywordsToSearch[index]}" 검색 실패:`, reason);
           groupedNews[keywordsToSearch[index]] = [];
         }
       });
+      
+      console.log(`검색 완료: 성공 ${successCount}개 키워드, 실패 ${failCount}개 키워드`);
+      
+      // 모든 검색이 실패했거나 결과가 모두 비어있는 경우
+      const hasAnyResults = Object.values(groupedNews).some(items => items.length > 0);
+      if (!hasAnyResults && successCount === 0) {
+        setError("모든 카테고리 검색이 실패했습니다. 네이버 API 키 설정을 확인하거나 잠시 후 다시 시도해주세요.");
+      } else if (!hasAnyResults) {
+        setError("검색은 성공했지만 결과가 없습니다. 다른 검색어나 카테고리를 시도해보세요.");
+      }
       
       setNewsByCategory(groupedNews);
       
@@ -152,7 +190,9 @@ export default function ScriptGenerationPage() {
         setActiveTab(Object.keys(groupedNews)[0]);
       }
     } catch (err: any) {
-      setError(err.message || "인기 뉴스를 불러오는 중 오류가 발생했습니다.");
+      const errorMsg = err.message || "인기 뉴스를 불러오는 중 오류가 발생했습니다.";
+      console.error("[인기 뉴스 로드 실패]:", errorMsg);
+      setError(errorMsg);
       setNewsByCategory({});
     } finally {
       setIsLoading(false);
@@ -171,6 +211,7 @@ export default function ScriptGenerationPage() {
     setVideoTopic("");
     setGeneratedPrompt("");
     setCopied(false);
+    setKnowledgeTopic(""); // 지식 전달 모드 초기화
 
     try {
       // 카테고리 선택이나 검색어 입력이 없으면 인기 뉴스 자동 조회
@@ -309,6 +350,8 @@ export default function ScriptGenerationPage() {
     }
 
     setIsGenerating(true);
+    // 지식 주제 초기화 (뉴스 해설 모드로 전환)
+    setKnowledgeTopic("");
 
     // 첫 번째 선택한 뉴스 사용 (하나만)
     const news = selectedNews[0];
@@ -419,6 +462,109 @@ export default function ScriptGenerationPage() {
     setVideoTopic("");
     setGeneratedPrompt("");
     setCopied(false);
+  };
+
+  // 지식 전달 대본 프롬프트 초기화 함수
+  const handleResetKnowledgePrompt = () => {
+    setKnowledgeTopic("");
+    setGeneratedPrompt("");
+    setCopied(false);
+  };
+
+  // 지식 전달 대본 프롬프트 생성 함수
+  const handleGenerateKnowledgePrompt = () => {
+    if (!knowledgeTopic.trim()) {
+      alert("주제를 입력해주세요.");
+      return;
+    }
+
+    setIsGenerating(true);
+    // 뉴스 선택 상태 초기화 (지식 전달 모드로 전환)
+    setSelectedNews([]);
+    setVideoTopic("");
+
+    const prompt = `앤디리스트 4분 지식 전달 프롬프트
+너는 유튜브 상식·정보 전달 콘텐츠를 전문으로 하는 대본 작성 전문가다.
+너의 역할은 단순히 정보를 나열하는 것이 아니라, 시청자가 "아, 이제 이해했다"라고 느끼도록 원인–구조–맥락을 명확하게 정리해주는 것이다.
+아래 주제를 바탕으로 시청자의 관심을 끌고, 비구독자도 끝까지 보게 만드는 4분(240초) 분량의 유튜브 영상 대본과 제목을 작성하라.
+────────────────
+[주제]
+${knowledgeTopic.trim()}
+────────────────
+[채널 컨셉]
+- 채널 목적: 복잡한 상식과 정보를 4분 안에 쉽게 이해시키는 해석형 채널. 단순 전달이 아니라 사고를 정리해주는 콘텐츠.
+- 채널 말투: 차분하고 분석적인 톤을 유지하되, 딱딱한 보고서 말투는 피한다. 시청자의 감정을 붙잡는 **따뜻한 공감**과 **장면감**을 함께 넣는다. 감정적 선동, 판단 강요, 훈계 어조는 사용하지 않는다. '설명해주는 사람'의 시점으로 말한다.
+- 음성 전제: 여자 AI 음성, 약간 빠른 속도로 낭독될 것을 전제로 한다. 따라서 문장은 짧고 명확하게 작성한다.
+────────────────
+[영상 구조 및 작성 규칙]
+1. 오프닝 훅
+- 질문 또는 관점 제시로 시작
+- "이 영상을 끝까지 보면 무엇을 이해하게 되는지"가 분명해야 함
+- 2문장 이내
+- 각 문장은 20자 내외의 짧은 문장으로 구성
+  - 오프닝 2문장 중 1문장은 반드시 **시청자의 체감/감정**을 건드리는 문장으로 쓴다. (예: 불안, 답답함, 궁금함, 기대 같은 감정 단어를 과장 없이 한 번만 사용)
+2. 핵심 설명 (본문)
+- 전개 순서: 사실 → 원인 → 구조 → 맥락
+- 설명형 나열이 아니라 '질문 → 답변' 흐름으로 작성
+- 한 문장은 최대 2줄을 넘지 않게 작성
+- 본문 중 반드시 아래 역할의 문장을 **명시적으로 포함할 것**
+  [앵커 문장 규칙]
+  아래 유형 중 최소 3개를 자연스럽게 삽입:
+  - "여기서 핵심은 이겁니다."
+  - "이걸 한 문장으로 정리하면"
+  - "이 지점에서 이해가 달라집니다."
+  - "이 부분을 놓치면 이해가 달라집니다."
+  ※ 앵커 문장은 문단 첫머리 또는 문단 전환 지점에 배치한다.
+  - 본문 초반(첫 1~2문단)에 **사람이 보이는 장면 1개**를 반드시 넣는다. (3~4문장, 일상적 상황/짧은 사례/대화 한 줄. 실명·과장 금지)
+  - 본문 중간에 **비유/은유 1개**를 넣되, 너무 문학적으로 길게 쓰지 말고 1~2문장으로 끝낸다.
+3. 긴장 유지 문장
+- 본문 중간에 반드시 아래 문장 중 하나를 포함:
+  - "그런데 여기서 대부분이 놓치는 지점이 있습니다."
+  - "이 부분이 앞으로 더 중요해질 수 있습니다."
+  - "이 주제는 여기서부터 다르게 봐야 합니다."
+4. 인사이트 요약
+- 단순 결론이 아니라 '사고 정리'
+- 왜 이 주제가 중요한지, 일상에서 어떻게 활용할 수 있는지를 정리
+- 이 구간은 문장 길이를 더 짧게 작성
+- 설명보다 단정한 문장 사용
+  - 이 구간에는 **감정 정리 1문장**을 포함한다. (예: "그래서 우리가 느끼는 궁금함은 당연한 것이고, 이해하면 더 명확해집니다." 같은 톤)
+5. 마무리
+- 다음 영상으로 이어지는 질문 제시
+- '이 지식은 일상에서 반복된다'는 인식 강화
+- 구독과 좋아요는 정보 제공의 수단으로 자연스럽게 언급
+- 마무리는 특정 주제나 후속 영상 제작을 전제로 한 직접적 예고를 피한다.
+- **구독·좋아요 멘트가 영상의 마지막 문장**이 되게 작성한다. 구독·좋아요 이후에는 어떠한 멘트도 추가하지 않는다.
+────────────────
+[출력 요구사항]
+- 유튜브 영상 제목:
+  * 30~40자 이내
+  * 정보 나열 금지 (기사 제목처럼 쓰지 말 것)
+  * 제목이 '뉴스'처럼 보이면 구독이 멈춘다. **기사 냄새(헤드라인 톤)** 가 나면 실패다.
+  * 제목은 정보가 아니라 **질문**이어야 한다.
+  * 제목에는 물음표(?)를 사용하지 않는다. 문장 자체를 의문형으로 끝낸다(예: ~일까, ~왜일까, ~어쩌다 이런 일이 반복될까).
+- 전체 대본 분량:
+  * 약 2100자
+  * 자연스러운 구어체
+  * 시간·초 단위 표현 사용 금지
+- 오프닝 훅:
+  * 약 45~60자
+  * 질문형 또는 관점 제시형
+- 본문:
+  * 약 1750자
+  * 예시·비유·사례 포함 (과도하지 않게)
+- 인사이트 요약:
+  * 3~4문장
+  * 약 75~90자
+- 마무리:
+  * 질문형
+  * 약 60~80자
+  * 구독·좋아요 문구 포함
+  * 구독·좋아요 문구가 **마지막 문장**이어야 함 (이후 추가 문장 금지)
+`;
+
+    setGeneratedPrompt(sanitizeGeneratedPrompt(prompt));
+    setCopied(false);
+    setIsGenerating(false);
   };
 
   return (
@@ -669,11 +815,11 @@ export default function ScriptGenerationPage() {
                 className="primary-button"
                 disabled={isGenerating}
               >
-                {isGenerating ? "생성 중..." : "대본 만들기 프롬프트 생성"}
+                {isGenerating ? "생성 중..." : "기사 해석 대본 프롬프트 생성"}
               </button>
             </div>
 
-            {generatedPrompt && (
+            {generatedPrompt && selectedNews.length > 0 && (
               <div className="prompt-result">
                 <div className="result-header">
                   <h3>생성된 대본 프롬프트</h3>
@@ -702,6 +848,74 @@ export default function ScriptGenerationPage() {
             )}
           </div>
         )}
+
+        {/* 지식 전달 대본 생성 섹션 */}
+        <div className="prompt-section" style={{ marginTop: "40px" }}>
+          <div className="form-section-title">
+            📚 지식 전달 대본 프롬프트
+            <button
+              onClick={handleResetKnowledgePrompt}
+              className="reset-selection-button"
+              title="입력 초기화"
+            >
+              🔄 새로고침
+            </button>
+          </div>
+          <p className="section-description" style={{ marginBottom: "20px" }}>
+            뉴스 기사가 아닌 상식·정보 주제를 입력하면, 해당 주제에 대한 지식 전달 대본 프롬프트를 생성합니다. (예: "환율이 오르내리는 원인과 결과", "인플레이션이 우리 생활에 미치는 영향" 등)
+          </p>
+
+          <div className="input-group">
+            <label htmlFor="knowledge-topic" className="form-label">주제 입력</label>
+            <input
+              id="knowledge-topic"
+              type="text"
+              value={knowledgeTopic}
+              onChange={(e) => setKnowledgeTopic(e.target.value)}
+              placeholder="예: 환율이 오르내리는 원인과 결과"
+              className="form-input"
+              style={{ width: "100%", padding: "12px", fontSize: "1rem" }}
+            />
+          </div>
+
+          <div className="button-group">
+            <button
+              onClick={handleGenerateKnowledgePrompt}
+              className="primary-button"
+              disabled={isGenerating}
+            >
+              {isGenerating ? "생성 중..." : "지식 전달 대본 프롬프트 생성"}
+            </button>
+          </div>
+
+          {generatedPrompt && knowledgeTopic && !selectedNews.length && (
+            <div className="prompt-result">
+              <div className="result-header">
+                <h3>생성된 대본 프롬프트</h3>
+                <button
+                  onClick={handleCopyPrompt}
+                  className="copy-button"
+                >
+                  {copied ? "✓ 복사됨" : "📋 복사"}
+                </button>
+              </div>
+              <div className="prompt-content">
+                <pre>{generatedPrompt}</pre>
+              </div>
+              <div className="result-actions">
+                <div className="result-hint-box">
+                  <h4 className="result-hint-title">📋 다음 단계</h4>
+                  <ol className="result-hint-steps">
+                    <li>위의 "📋 복사" 버튼을 클릭하여 프롬프트를 복사하세요.</li>
+                    <li>ChatGPT, Claude, Gemini 등 AI 도구를 열어주세요.</li>
+                    <li>복사한 프롬프트를 AI 도구에 붙여넣고 실행하세요.</li>
+                    <li>AI가 생성한 3분 대본을 확인하세요.</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </section>
     </main>
   );

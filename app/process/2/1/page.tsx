@@ -88,13 +88,27 @@ export default function NewsPage() {
       const response = await fetch(`/api/naver/news?${params.toString()}`);
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "뉴스 검색 중 오류가 발생했습니다.");
+        let errorMessage = "뉴스 검색 중 오류가 발생했습니다.";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        console.error(`[뉴스 검색 실패] ${searchQuery}:`, errorMessage);
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
+      
+      // items가 없거나 빈 배열인 경우도 체크
+      if (!data.items || data.items.length === 0) {
+        console.warn(`[뉴스 검색 결과 없음] ${searchQuery}: API는 성공했지만 결과가 비어있습니다.`);
+      }
+      
       return data.items || [];
     } catch (err: any) {
+      console.error(`[뉴스 검색 예외] ${searchQuery}:`, err.message || err);
       throw err;
     }
   };
@@ -131,15 +145,28 @@ export default function NewsPage() {
       categoryResults.forEach((result, index) => {
         if (result.status === 'fulfilled') {
           successCount++;
-          groupedNews[result.value.category] = result.value.items;
+          const items = result.value.items || [];
+          groupedNews[result.value.category] = items;
+          if (items.length === 0) {
+            console.warn(`키워드 "${keywordsToSearch[index]}" 검색 결과가 비어있습니다.`);
+          }
         } else {
           failCount++;
-          console.error(`키워드 "${keywordsToSearch[index]}" 검색 실패:`, result.reason);
+          const reason = result.reason?.message || result.reason || "알 수 없는 오류";
+          console.error(`키워드 "${keywordsToSearch[index]}" 검색 실패:`, reason);
           groupedNews[keywordsToSearch[index]] = [];
         }
       });
       
       console.log(`검색 완료: 성공 ${successCount}개 키워드, 실패 ${failCount}개 키워드`);
+      
+      // 모든 검색이 실패했거나 결과가 모두 비어있는 경우
+      const hasAnyResults = Object.values(groupedNews).some(items => items.length > 0);
+      if (!hasAnyResults && successCount === 0) {
+        setError("모든 카테고리 검색이 실패했습니다. 네이버 API 키 설정을 확인하거나 잠시 후 다시 시도해주세요.");
+      } else if (!hasAnyResults) {
+        setError("검색은 성공했지만 결과가 없습니다. 다른 검색어나 카테고리를 시도해보세요.");
+      }
       
       setNewsByCategory(groupedNews);
       
@@ -148,7 +175,9 @@ export default function NewsPage() {
         setActiveTab(Object.keys(groupedNews)[0]);
       }
     } catch (err: any) {
-      setError(err.message || "인기 뉴스를 불러오는 중 오류가 발생했습니다.");
+      const errorMsg = err.message || "인기 뉴스를 불러오는 중 오류가 발생했습니다.";
+      console.error("[인기 뉴스 로드 실패]:", errorMsg);
+      setError(errorMsg);
       setNewsByCategory({});
     } finally {
       setIsLoading(false);
