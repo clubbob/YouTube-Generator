@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 interface SubMenuItem {
@@ -43,10 +43,39 @@ const menuItems: SubMenuItem[] = [
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileOpenIndex, setMobileOpenIndex] = useState<number | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // 인증 상태 확인
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/check");
+        const data = await response.json();
+        setIsAuthenticated(data.authenticated || false);
+      } catch (error) {
+        console.error("Auth check error:", error);
+        setIsAuthenticated(false);
+      }
+    };
+
+    checkAuth();
+  }, [pathname]); // 경로가 변경될 때마다 인증 상태 재확인
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      setIsAuthenticated(false);
+      router.push("/login");
+      router.refresh();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   useEffect(() => {
     if (mobileMenuOpen) {
@@ -65,48 +94,51 @@ export default function Header() {
         <Link href="/" className="logo">
           YouTube Generator
         </Link>
-        <button
-          className={`mobile-menu-toggle ${mobileMenuOpen ? "mobile-open" : ""}`}
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="메뉴 열기/닫기"
-        >
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-        <nav className={`header-nav ${mobileMenuOpen ? "mobile-open" : ""}`}>
-          <div
-            className="nav-item-wrapper main-menu"
-            onMouseEnter={() => {
-              if (window.innerWidth > 768) {
-                setIsMenuOpen(true);
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (window.innerWidth > 768) {
-                const relatedTarget = e.relatedTarget;
-                if (!relatedTarget || 
-                    !(relatedTarget instanceof HTMLElement) ||
-                    (!relatedTarget.closest('.main-menu') && 
-                     !relatedTarget.closest('.menu-dropdown'))) {
-                  setIsMenuOpen(false);
-                  setHoveredIndex(null);
-                }
-              }
-            }}
+        {isAuthenticated && (
+          <button
+            className={`mobile-menu-toggle ${mobileMenuOpen ? "mobile-open" : ""}`}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="메뉴 열기/닫기"
           >
-            <div 
-              className="nav-item-main"
-              onClick={() => {
-                if (window.innerWidth <= 768) {
-                  setIsMenuOpen(!isMenuOpen);
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        )}
+        <nav className={`header-nav ${mobileMenuOpen ? "mobile-open" : ""}`}>
+          {isAuthenticated && (
+            <div
+              className="nav-item-wrapper main-menu"
+              onMouseEnter={() => {
+                if (window.innerWidth > 768) {
+                  setIsMenuOpen(true);
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (window.innerWidth > 768) {
+                  const relatedTarget = e.relatedTarget;
+                  if (!relatedTarget || 
+                      !(relatedTarget instanceof HTMLElement) ||
+                      (!relatedTarget.closest('.main-menu') && 
+                       !relatedTarget.closest('.menu-dropdown'))) {
+                    setIsMenuOpen(false);
+                    setHoveredIndex(null);
+                  }
                 }
               }}
             >
-              <span className="nav-link main-menu-link">
-                유튜브 영상 제작 가이드
-              </span>
-            </div>
+              <div 
+                className="nav-item-main"
+                onClick={() => {
+                  if (window.innerWidth <= 768) {
+                    setIsMenuOpen(!isMenuOpen);
+                  }
+                }}
+              >
+                <span className="nav-link main-menu-link">
+                  유튜브 영상 제작 가이드
+                </span>
+              </div>
             {isMenuOpen && (
               <div 
                 className="menu-dropdown"
@@ -255,7 +287,13 @@ export default function Header() {
                 ))}
               </div>
             )}
-          </div>
+            </div>
+          )}
+          {isAuthenticated && (
+            <button onClick={handleLogout} className="logout-button">
+              로그아웃
+            </button>
+          )}
         </nav>
       </div>
     </header>

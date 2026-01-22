@@ -311,6 +311,30 @@ header.header {
   }
 }
 
+.logout-button {
+  margin-left: auto;
+  padding: 8px 16px;
+  background-color: #f44336;
+  color: white;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.logout-button:hover {
+  background-color: #d32f2f;
+}
+
+@media (max-width: 768px) {
+  .logout-button {
+    width: 100%;
+    margin: 20px 0 0 0;
+    padding: 12px;
+  }
+}
+
 @media (max-width: 768px) {
   .header-container {
     padding: 12px 15px;

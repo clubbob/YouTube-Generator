@@ -911,7 +911,7 @@ ${knowledgeTopic.trim()}
                       <li>위의 "📋 복사" 버튼을 클릭하여 프롬프트를 복사하세요.</li>
                       <li>ChatGPT, Claude, Gemini 등 AI 도구를 열어주세요.</li>
                       <li>복사한 프롬프트를 AI 도구에 붙여넣고 실행하세요.</li>
-                      <li>AI가 생성한 3분 대본을 확인하세요.</li>
+                      <li>AI가 생성한 대본을 확인하세요.</li>
                     </ol>
                   </div>
                 </div>
