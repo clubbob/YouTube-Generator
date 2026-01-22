@@ -257,7 +257,7 @@ ${productionSustainability}
               className="primary-button"
               disabled={isGenerating}
             >
-              {isGenerating ? "생성 중..." : "프롬프트 생성"}
+              {isGenerating ? "생성 중..." : "채널 컨셉 설정 프롬프트 생성"}
             </button>
           </div>
 
