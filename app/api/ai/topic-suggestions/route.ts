@@ -1,0 +1,293 @@
+import { NextRequest, NextResponse } from "next/server";
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+/**
+ * AI 주제 추천 API
+ * OpenAI API를 사용하여 지식 전달 대본 주제를 추천합니다.
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const apiKey = process.env.OPENAI_API_KEY;
+    const searchParams = request.nextUrl.searchParams;
+    const category = searchParams.get("category") || "";
+
+    if (!apiKey) {
+      // API 키가 없으면 미리 정의된 주제 목록에서 랜덤 추천
+      const fallbackTopics = [
+        "환율이 오르내리는 원인과 결과",
+        "인플레이션이 우리 생활에 미치는 영향",
+        "부동산 가격이 변동하는 구조적 원인",
+        "금리가 경제에 미치는 영향",
+        "주식 시장의 심리적 요인",
+        "디지털 노마드의 삶과 선택",
+        "시간 관리의 본질과 한계",
+        "인간관계에서 발생하는 갈등의 구조",
+        "성공과 실패를 결정하는 요소들",
+        "기술 발전이 일자리에 미치는 영향",
+        "교육 시스템의 변화와 미래",
+        "건강한 습관을 만드는 방법",
+        "투자 심리와 판단 오류",
+        "소비 패턴이 바뀌는 이유",
+        "창업 성공률을 높이는 요소",
+        "왜 사람들은 꿈을 꾸는 걸까",
+        "커피가 우리 기분에 미치는 영향",
+        "올바른 수면 자세를 결정하는 요소",
+        "스트레스가 건강에 해로운 이유",
+        "식습관이 면역력을 변화시키는 방법",
+        "인터넷 중독이 뇌에 미치는 영향",
+        "왜 사람들은 소셜미디어에 빠지는가",
+        "학습 능력을 높이는 과학적 방법",
+        "기억력이 나빠지는 원인과 대책",
+        "왜 사람들은 거짓말을 하는가",
+        "집중력을 방해하는 요소들",
+        "왜 사람들은 습관을 바꾸기 어려운가",
+        "성격이 형성되는 과정",
+        "왜 사람들은 불안해하는가",
+        "행복을 결정하는 요소들",
+        "인간의 의사결정 과정",
+        "왜 사람들은 변화를 두려워하는가",
+        "동기부여가 작동하는 원리",
+        "왜 사람들은 비교를 하는가",
+        "자존감이 형성되는 과정",
+        "왜 사람들은 외로움을 느끼는가",
+        "인간의 감정이 생기는 이유",
+        "왜 사람들은 미루는 습관이 생기는가",
+        "창의력이 발휘되는 조건",
+        "왜 사람들은 집단 행동을 따르는가",
+      ];
+
+      // 랜덤하게 5개 선택 (더 나은 랜덤화)
+      const shuffled = [...fallbackTopics];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      const suggestions = shuffled.slice(0, 5);
+
+      return NextResponse.json({
+        suggestions,
+        source: "fallback",
+      });
+    }
+
+    // 모든 카테고리를 포함한 주제 추천
+    const allCategories = [
+      "시사", "정치", "경제", "사회", "국제", "문화", "연예", "스포츠",
+      "IT", "과학", "부동산", "건강", "AI", "금융", "교육", "환경", "게임", "음식"
+    ];
+    
+    // 매번 다른 카테고리 조합을 랜덤으로 선택 (3-5개)
+    const shuffledCategories = [...allCategories].sort(() => 0.5 - Math.random());
+    const selectedCategoriesCount = 3 + Math.floor(Math.random() * 3); // 3-5개
+    const selectedCategories = shuffledCategories.slice(0, selectedCategoriesCount);
+    
+    // 매번 다른 요청을 위한 랜덤 시드
+    const randomSeed = Math.floor(Math.random() * 1000000);
+
+    // OpenAI API 호출
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `너는 유튜브 지식 전달 콘텐츠 기획 전문가이자 유튜브 알고리즘과 트렌드를 분석하는 전문가다. 시청자가 궁금해할 만한 상식·정보 주제를 추천하는 역할을 한다.
+
+**중요: 추천하는 주제는 유튜브 영상 제목으로 바로 사용할 수 있어야 한다.**
+
+주제는 다음 조건을 만족해야 한다:
+1. 뉴스 기사가 아닌 일반적인 상식·정보 주제
+2. "왜", "어떻게", "무엇이" 같은 질문 형태로 표현 가능
+3. 4분 분량의 영상으로 설명 가능한 깊이
+4. 일상생활과 연관되어 있어 시청자의 관심을 끌 수 있는 주제
+5. 원인-구조-맥락을 설명할 수 있는 주제
+
+**유튜브 제목으로 적합한 형식 (필수):**
+- 20-30자 이내 (간결하고 명확하게, 한눈에 이해 가능)
+- 핵심만 간결하게 표현 (복잡한 설명이나 긴 수식어 금지)
+- 호기심을 자극하는 질문형 또는 관점 제시형
+- 클릭률이 높을 수 있는 형태 (예: "왜 ~일까", "~하는 이유", "~의 진실")
+- 정보 나열이 아닌 질문이나 관점 제시 형태
+- 물음표(?)는 사용하지 않음 (문장 자체를 의문형으로 끝냄)
+- **나쁜 예시**: "소셜미디어가 우리의 대인관계에 미치는 영향과 진실" (너무 길고 복잡)
+- **좋은 예시**: "소셜미디어가 관계를 망치는 이유", "환율이 오르내리는 이유", "왜 사람들은 습관을 바꾸기 어려운가"
+
+**유튜브 인기/트렌드 고려사항 (매우 중요):**
+- 유튜브에서 실제로 검색량이 많고 관심도가 높은 주제를 우선 고려
+- 최근 트렌드나 사회적 이슈와 연관된 주제 (단, 뉴스 기사는 제외)
+- 시청자가 "알고 싶어 하는" 주제, 즉 검색 의도가 높은 주제
+- 다른 유튜버들이 많이 다루는 주제이지만, 새로운 관점이나 깊이 있는 해석이 가능한 주제
+- 영상 제목으로 클릭률이 높을 수 있는 주제 (호기심을 자극하는 주제)
+
+**다양성 요구사항:**
+- 이번 요청은 완전히 새로운 주제를 추천해야 한다. 이전 요청과는 전혀 다른 주제여야 함.
+- 가능한 한 창의적이고 독특한 주제를 선정해야 함.
+- 일반적으로 많이 다뤄지는 주제라도 새로운 관점이나 깊이 있는 해석이 가능한 주제를 우선 고려.
+
+응답은 JSON 형식으로, "suggestions" 배열에 5개의 주제를 포함해야 한다.
+각 주제는 20-30자 이내의 간결하고 명확한 한국어 문장으로 작성하며, 유튜브 영상 제목으로 바로 사용할 수 있는 형태여야 한다.
+
+**작성 원칙:**
+- 핵심만 간결하게 표현 (복잡한 설명이나 긴 수식어 금지)
+- 한눈에 이해할 수 있는 명확한 주제
+- "~의 영향과 진실", "~하는 방법", "~의 접근" 같은 복잡한 표현 피하기
+- **나쁜 예시**: "소셜미디어가 우리의 대인관계에 미치는 영향과 진실" (너무 길고 복잡)
+- **좋은 예시**: "소셜미디어가 관계를 망치는 이유", "환율이 오르내리는 이유", "왜 사람들은 습관을 바꾸기 어려운가"`,
+          },
+          {
+            role: "user",
+            content: `지식 전달 유튜브 영상 주제 5개를 추천해줘. 
+
+**이번 요청에서 우선적으로 고려할 카테고리:**
+${selectedCategories.join(", ")}
+
+**전체 고려 카테고리 목록:**
+시사, 정치, 경제, 사회, 국제, 문화, 연예, 스포츠, IT, 과학, 부동산, 건강, AI, 금융, 교육, 환경, 게임, 음식
+
+**추천 규칙 (매우 중요):**
+- 위에서 지정한 우선 카테고리(${selectedCategories.join(", ")})에서 최소 2-3개 주제를 선정하고, 나머지는 전체 카테고리에서 골고루 선정
+- 각 주제는 원인, 구조, 맥락을 설명할 수 있는 깊이가 있어야 함
+- **이전에 추천한 주제와는 완전히 다른 새로운 주제를 추천해야 함** (중복 금지)
+- 일상생활과 밀접하게 연관되어 시청자의 관심을 끌 수 있는 주제로 선정
+- 뉴스 기사가 아닌 일반적인 상식·정보 주제여야 함
+
+**유튜브 인기/트렌드 고려 (필수):**
+- 유튜브에서 실제로 검색량이 많고 관심도가 높은 주제를 우선 추천
+- 최근 사회적 트렌드나 이슈와 연관된 주제 (단, 뉴스 기사는 제외)
+- 시청자가 "알고 싶어 하는" 주제, 즉 검색 의도가 높은 주제
+- 영상 제목으로 클릭률이 높을 수 있는 주제 (호기심을 자극하는 주제)
+- 다른 유튜버들이 많이 다루는 주제이지만, 새로운 관점이나 깊이 있는 해석이 가능한 주제도 포함
+
+**유튜브 제목 형식 (매우 중요):**
+- 추천하는 주제는 유튜브 영상 제목으로 바로 사용할 수 있어야 함
+- 20-30자 이내로 작성 (간결하고 명확하게, 한눈에 이해 가능)
+- 핵심만 간결하게 표현 (복잡한 설명이나 긴 수식어 금지)
+- 호기심을 자극하는 질문형 또는 관점 제시형
+- 물음표(?)는 사용하지 않음 (문장 자체를 의문형으로 끝냄, 예: "~일까", "~하는 이유", "~의 진실")
+- 정보 나열이 아닌 질문이나 관점 제시 형태
+- 검색 최적화를 고려한 키워드 포함
+- **"~의 영향과 진실", "~하는 방법", "~의 접근" 같은 복잡한 표현 피하기**
+- **나쁜 예시**: "소셜미디어가 우리의 대인관계에 미치는 영향과 진실", "AI와 사물인터넷이 우리의 일상생활을 변화시키는 이유" (너무 길고 복잡)
+- **좋은 예시**: "소셜미디어가 관계를 망치는 이유", "환율이 오르내리는 이유", "왜 사람들은 습관을 바꾸기 어려운가"
+
+**요청 번호: ${randomSeed}** - 이 번호는 이 요청이 다른 요청과 다르다는 것을 나타냅니다.
+
+5개의 주제를 다양한 카테고리에서 골고루 선정하되, 유튜브에서 인기가 있을 만한 주제를 우선 고려하고, 각 주제는 유튜브 영상 제목으로 바로 사용할 수 있는 형태로 작성해줘.`,
+          },
+        ],
+        temperature: 1.2, // 다양성을 위해 temperature 더 증가
+        max_tokens: 600,
+        response_format: { type: "json_object" },
+        seed: randomSeed, // 랜덤 시드 추가로 매번 다른 결과 생성
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("[AI Topic Suggestions] OpenAI API Error:", errorText);
+      
+      // API 실패 시 폴백 주제 반환 (랜덤 선택)
+      const fallbackTopics = [
+        "환율이 오르내리는 원인과 결과",
+        "인플레이션이 우리 생활에 미치는 영향",
+        "부동산 가격이 변동하는 구조적 원인",
+        "금리가 경제에 미치는 영향",
+        "주식 시장의 심리적 요인",
+        "디지털 노마드의 삶과 선택",
+        "시간 관리의 본질과 한계",
+        "인간관계에서 발생하는 갈등의 구조",
+        "성공과 실패를 결정하는 요소들",
+        "기술 발전이 일자리에 미치는 영향",
+        "교육 시스템의 변화와 미래",
+        "건강한 습관을 만드는 방법",
+        "투자 심리와 판단 오류",
+        "소비 패턴이 바뀌는 이유",
+        "창업 성공률을 높이는 요소",
+        "왜 사람들은 꿈을 꾸는 걸까",
+        "커피가 우리 기분에 미치는 영향",
+        "올바른 수면 자세를 결정하는 요소",
+        "스트레스가 건강에 해로운 이유",
+        "식습관이 면역력을 변화시키는 방법",
+      ];
+
+      // 랜덤하게 5개 선택
+      const shuffled = [...fallbackTopics];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      const suggestions = shuffled.slice(0, 5);
+
+      return NextResponse.json({
+        suggestions,
+        source: "fallback",
+      });
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+
+    if (!content) {
+      throw new Error("No content in OpenAI response");
+    }
+
+    const parsed = JSON.parse(content);
+    const suggestions = parsed.suggestions || [];
+
+    if (suggestions.length === 0) {
+      throw new Error("No suggestions in response");
+    }
+
+    return NextResponse.json({
+      suggestions: suggestions.slice(0, 5), // 최대 5개
+      source: "openai",
+    });
+  } catch (error: any) {
+    console.error("[AI Topic Suggestions] Error:", error.message);
+
+    // 에러 발생 시 폴백 주제 반환 (랜덤 선택)
+    const fallbackTopics = [
+      "환율이 오르내리는 원인과 결과",
+      "인플레이션이 우리 생활에 미치는 영향",
+      "부동산 가격이 변동하는 구조적 원인",
+      "금리가 경제에 미치는 영향",
+      "주식 시장의 심리적 요인",
+      "디지털 노마드의 삶과 선택",
+      "시간 관리의 본질과 한계",
+      "인간관계에서 발생하는 갈등의 구조",
+      "성공과 실패를 결정하는 요소들",
+      "기술 발전이 일자리에 미치는 영향",
+      "교육 시스템의 변화와 미래",
+      "건강한 습관을 만드는 방법",
+      "투자 심리와 판단 오류",
+      "소비 패턴이 바뀌는 이유",
+      "창업 성공률을 높이는 요소",
+      "왜 사람들은 꿈을 꾸는 걸까",
+      "커피가 우리 기분에 미치는 영향",
+      "올바른 수면 자세를 결정하는 요소",
+      "스트레스가 건강에 해로운 이유",
+      "식습관이 면역력을 변화시키는 방법",
+    ];
+
+    // 랜덤하게 5개 선택
+    const shuffled = [...fallbackTopics];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    const suggestions = shuffled.slice(0, 5);
+
+    return NextResponse.json({
+      suggestions,
+      source: "fallback",
+      error: error.message,
+    });
+  }
+}

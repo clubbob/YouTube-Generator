@@ -59,6 +59,10 @@ export default function ScriptGenerationPage() {
   
   // 지식 전달 대본 관련 상태
   const [knowledgeTopic, setKnowledgeTopic] = useState("");
+  const [topicSuggestions, setTopicSuggestions] = useState<string[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [previousSuggestions, setPreviousSuggestions] = useState<string[]>([]); // 이전 추천 기억
 
   // 채널 컨셉 정보
   const [channelPurpose, setChannelPurpose] = useState("복잡한 뉴스와 정보를 3분 안에 쉽게 이해하게 만드는 채널. 단순 정보 전달이 아니라 원인, 구조, 맥락을 연결하여 시청자의 사고를 정리해주는 해석형 채널");
@@ -469,6 +473,60 @@ export default function ScriptGenerationPage() {
     setKnowledgeTopic("");
     setGeneratedPrompt("");
     setCopied(false);
+    setTopicSuggestions([]);
+    setShowSuggestions(false);
+    setPreviousSuggestions([]); // 이전 추천 목록도 초기화
+  };
+
+  // AI 주제 추천 함수
+  const handleGetTopicSuggestions = async () => {
+    setIsLoadingSuggestions(true);
+    setShowSuggestions(false);
+    setError(null);
+
+    try {
+      // 매번 다른 요청을 위해 타임스탬프 추가 (캐시 방지)
+      const timestamp = Date.now();
+      const response = await fetch(`/api/ai/topic-suggestions?t=${timestamp}`, {
+        cache: 'no-store', // 캐시 방지
+      });
+
+      if (!response.ok) {
+        throw new Error("주제 추천 중 오류가 발생했습니다.");
+      }
+
+      const data = await response.json();
+      const newSuggestions = data.suggestions || [];
+      
+      // 이전 추천과 중복되지 않는 주제만 필터링
+      const uniqueSuggestions = newSuggestions.filter(
+        (topic: string) => !previousSuggestions.includes(topic)
+      );
+      
+      // 중복이 많으면 원본 사용 (모두 중복인 경우 방지)
+      const finalSuggestions = uniqueSuggestions.length >= 3 
+        ? uniqueSuggestions.slice(0, 5)
+        : newSuggestions.slice(0, 5);
+      
+      setTopicSuggestions(finalSuggestions);
+      // 이전 추천 목록에 추가 (최대 20개까지만 유지)
+      setPreviousSuggestions((prev) => {
+        const combined = [...prev, ...finalSuggestions];
+        return combined.slice(-20); // 최근 20개만 유지
+      });
+      setShowSuggestions(true);
+    } catch (err: any) {
+      console.error("[주제 추천 실패]:", err.message);
+      setError("주제 추천을 불러오는 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  };
+
+  // 추천 주제 선택 함수
+  const handleSelectSuggestion = (topic: string) => {
+    setKnowledgeTopic(topic);
+    setShowSuggestions(false);
   };
 
   // 지식 전달 대본 프롬프트 생성 함수
@@ -515,8 +573,21 @@ ${knowledgeTopic.trim()}
   - "이 지점에서 이해가 달라집니다."
   - "이 부분을 놓치면 이해가 달라집니다."
   ※ 앵커 문장은 문단 첫머리 또는 문단 전환 지점에 배치한다.
+  ※ 동일한 앵커 문장은 한 대본에서 최대 1회만 사용한다. 3개 이상 사용 시 서로 다른 문장을 선택할 것.
+  [관점 포함 규칙]
+  - 본문에는 반드시 다음 중 하나의 관점을 명시적으로 포함할 것
+    ① 개인 관점 (개인의 선택·심리·판단)
+    ② 구조 관점 (제도·시스템·환경)
+    ③ 시간 관점 (누적·지연·타이밍)
+  ※ 어떤 관점을 썼는지는 드러나게 표현할 것.
+  [금지 표현]
+  - 본문에서 다음 유형의 문장은 사용하지 않는다:
+    * "~해야 한다", "~가 정답이다", "~밖에 없다"
+    * 개인의 도덕성이나 능력을 평가하는 표현
   - 본문 초반(첫 1~2문단)에 **사람이 보이는 장면 1개**를 반드시 넣는다. (3~4문장, 일상적 상황/짧은 사례/대화 한 줄. 실명·과장 금지)
   - 본문 중간에 **비유/은유 1개**를 넣되, 너무 문학적으로 길게 쓰지 말고 1~2문장으로 끝낸다.
+  - 본문 후반부에는 반드시 다음 형식의 문장 1개를 포함할 것:
+    "그래서 이 문제는 ○○의 문제가 아니라, △△의 문제입니다."
 3. 긴장 유지 문장
 - 본문 중간에 반드시 아래 문장 중 하나를 포함:
   - "그런데 여기서 대부분이 놓치는 지점이 있습니다."
@@ -866,7 +937,22 @@ ${knowledgeTopic.trim()}
           </p>
 
           <div className="input-group">
-            <label htmlFor="knowledge-topic" className="form-label">주제 입력</label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <label htmlFor="knowledge-topic" className="form-label" style={{ margin: 0 }}>주제 입력</label>
+              <button
+                type="button"
+                onClick={handleGetTopicSuggestions}
+                disabled={isLoadingSuggestions}
+                className="secondary-button"
+                style={{ 
+                  fontSize: "0.9rem", 
+                  padding: "6px 12px",
+                  minWidth: "auto"
+                }}
+              >
+                {isLoadingSuggestions ? "추천 중..." : "🤖 AI 주제 추천"}
+              </button>
+            </div>
             <input
               id="knowledge-topic"
               type="text"
@@ -876,6 +962,70 @@ ${knowledgeTopic.trim()}
               className="form-input"
               style={{ width: "100%", padding: "12px", fontSize: "1rem" }}
             />
+            {showSuggestions && topicSuggestions.length > 0 && (
+              <div style={{ 
+                marginTop: "12px", 
+                padding: "16px", 
+                background: "#f9f9f9", 
+                borderRadius: "8px",
+                border: "1px solid #e0e0e0"
+              }}>
+                <div style={{ 
+                  fontSize: "0.9rem", 
+                  fontWeight: 600, 
+                  color: "#333", 
+                  marginBottom: "12px" 
+                }}>
+                  추천 주제 (클릭하여 선택):
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {topicSuggestions.map((topic, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => handleSelectSuggestion(topic)}
+                      style={{
+                        padding: "10px 14px",
+                        background: "white",
+                        border: "1px solid #ddd",
+                        borderRadius: "6px",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        fontSize: "0.95rem",
+                        color: "#333",
+                        transition: "all 0.2s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = "#0066cc";
+                        e.currentTarget.style.background = "#f0f7ff";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = "#ddd";
+                        e.currentTarget.style.background = "white";
+                      }}
+                    >
+                      {topic}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSuggestions(false)}
+                  style={{
+                    marginTop: "12px",
+                    padding: "6px 12px",
+                    background: "transparent",
+                    border: "none",
+                    color: "#666",
+                    fontSize: "0.85rem",
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                  }}
+                >
+                  닫기
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="button-group">
