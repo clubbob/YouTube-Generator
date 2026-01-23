@@ -252,6 +252,12 @@ export default function ScriptGenerationPage() {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // 쉼표로 구분된 키워드를 AND 조건(공백)으로 변환
+    let processedQuery = query.trim();
+    if (processedQuery.includes(",")) {
+      processedQuery = processedQuery.split(",").map(k => k.trim()).filter(k => k).join(" ");
+    }
+    
     setIsLoading(true);
     setError(null);
     // 검색 조건이 바뀌면 기존 생성 프롬프트는 의미가 없어져서 자동 초기화
@@ -264,16 +270,16 @@ export default function ScriptGenerationPage() {
 
     try {
       // 카테고리 선택이나 검색어 입력이 없으면 인기 뉴스 자동 조회
-      if (selectedCategories.length === 0 && !query.trim()) {
+      if (selectedCategories.length === 0 && !processedQuery) {
         await loadPopularNews();
         return;
       }
 
       const newsByCategoryMap: { [key: string]: NewsItem[] } = {};
 
-      if (selectedCategories.length > 0 && query.trim()) {
+      if (selectedCategories.length > 0 && processedQuery) {
         const categoryPromises = selectedCategories.map(async (category) => {
-          const searchTerm = `${category} ${query.trim()}`;
+          const searchTerm = `${category} ${processedQuery}`;
           const items = await fetchNews(searchTerm, 10, "sim");
           return {
             category,
@@ -298,8 +304,8 @@ export default function ScriptGenerationPage() {
         if (selectedCategories.length > 0) {
           setActiveTab(selectedCategories[0]);
         }
-      } else if (query.trim()) {
-        const searchItems = await fetchNews(query.trim(), 10, "sim");
+      } else if (processedQuery) {
+        const searchItems = await fetchNews(processedQuery, 10, "sim");
         newsByCategoryMap["검색 결과"] = searchItems.map((item: NewsItem) => ({
           ...item,
           category: undefined,
@@ -1004,7 +1010,7 @@ ${knowledgeTopic.trim()}
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="뉴스 검색어를 입력하세요 (선택사항, 입력하지 않으면 인기 뉴스 조회)"
+                  placeholder="뉴스 검색어를 입력하세요 (쉼표로 구분 시 AND 검색, 예: AI, 코딩, 기술)"
                   className="news-search-input"
                 />
                 <button type="submit" className="news-search-button" disabled={isLoading}>

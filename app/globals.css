@@ -1040,6 +1040,7 @@ header.header {
   font-weight: 600;
   font-size: 0.9rem;
   color: #333;
+  white-space: nowrap;
 }
 
 .form-group input,
@@ -1049,6 +1050,9 @@ header.header {
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 1rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .form-group input:focus,

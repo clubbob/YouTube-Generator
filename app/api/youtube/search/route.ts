@@ -22,13 +22,8 @@ export async function POST(request: NextRequest) {
       filters.minDurationSec = parseInt(filters.minDurationSec) || undefined;
     }
 
-    // 입력 검증
-    if (!query) {
-      return NextResponse.json(
-        { error: "query는 필수입니다." },
-        { status: 400 }
-      );
-    }
+    // 입력 검증 - query가 없으면 기본 검색어 사용
+    const searchQuery = query || "인기 뉴스";
 
     const apiKey = process.env.YOUTUBE_API_KEY;
     if (!apiKey) {
@@ -40,7 +35,8 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[YouTube Search] Starting search:", {
-      query,
+      query: searchQuery,
+      originalQuery: query,
       timeframeDays,
       maxResults,
     });
@@ -55,7 +51,7 @@ export async function POST(request: NextRequest) {
     const searchUrl =
       `https://www.googleapis.com/youtube/v3/search` +
       `?part=snippet` +
-      `&q=${encodeURIComponent(query)}` +
+      `&q=${encodeURIComponent(searchQuery)}` +
       `&type=video` +
       `&maxResults=${Math.min(maxResults, 50)}` +
       `&order=viewCount` +
@@ -236,13 +232,24 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Shorts 필터링
-      if (
-        contentType === "shorts_like" &&
-        !isShortsLike(title, description, durationSec)
-      ) {
-        continue;
+      // 콘텐츠 타입 필터링
+      if (contentType === "shorts") {
+        // 쇼츠: 1분(60초) 이하
+        if (durationSec > 60) {
+          continue;
+        }
+      } else if (contentType === "regular") {
+        // 기본: 1분(60초) 초과 ~ 5분(300초) 미만
+        if (durationSec <= 60 || durationSec >= 300) {
+          continue;
+        }
+      } else if (contentType === "longform") {
+        // 장편: 5분(300초) 이상
+        if (durationSec < 300) {
+          continue;
+        }
       }
+      // contentType === "all"인 경우 필터링 없음
 
       // 구독자 수 필터링
       if (filters?.subscriberMax && subs > filters.subscriberMax) {

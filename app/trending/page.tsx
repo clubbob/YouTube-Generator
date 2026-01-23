@@ -20,7 +20,7 @@ export default function TrendingPage() {
     subscriberMax?: number;
     minViews?: number;
     minDurationSec?: number;
-    contentType?: "shorts_like" | "all";
+    contentType?: "all" | "regular" | "longform" | "shorts";
   }) => {
     setIsLoading(true);
     setError(null);

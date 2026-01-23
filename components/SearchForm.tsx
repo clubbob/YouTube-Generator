@@ -9,7 +9,7 @@ interface SearchFormProps {
     subscriberMax?: number;
     minViews?: number;
     minDurationSec?: number;
-    contentType?: "shorts_like" | "all";
+    contentType?: "all" | "regular" | "longform" | "shorts";
   }) => void;
   isLoading?: boolean;
 }
@@ -18,9 +18,9 @@ export default function SearchForm({ onSearch, isLoading }: SearchFormProps) {
   const [query, setQuery] = useState("");
   const [timeframeDays, setTimeframeDays] = useState<7 | 30 | 90>(30);
   const [subscriberMax, setSubscriberMax] = useState("500,000");
-  const [minViews, setMinViews] = useState("100,000");
-  const [minDurationSec, setMinDurationSec] = useState("60");
-  const [contentType, setContentType] = useState<"shorts_like" | "all">("all");
+  const [minViews, setMinViews] = useState("20,000");
+  const [minDurationSec, setMinDurationSec] = useState("120");
+  const [contentType, setContentType] = useState<"all" | "regular" | "longform" | "shorts">("regular");
 
   // 숫자에 천단위 구분자 추가
   const formatNumber = (value: string): string => {
@@ -39,10 +39,17 @@ export default function SearchForm({ onSearch, isLoading }: SearchFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!query.trim()) return;
+    
+    // 키워드가 없으면 기본 검색어 사용 (앤디리스트 채널에 적합한 주제들)
+    let searchQuery = query.trim() || "인기 뉴스";
+    
+    // 쉼표로 구분된 키워드를 AND 조건(공백)으로 변환
+    if (searchQuery.includes(",")) {
+      searchQuery = searchQuery.split(",").map(k => k.trim()).filter(k => k).join(" ");
+    }
 
     onSearch({
-      query: query.trim(),
+      query: searchQuery,
       timeframeDays,
       subscriberMax: parseNumber(subscriberMax),
       minViews: parseNumber(minViews),
@@ -71,15 +78,16 @@ export default function SearchForm({ onSearch, isLoading }: SearchFormProps) {
     <form onSubmit={handleSubmit} className="search-form">
       <div className="form-row">
         <div className="form-group">
-          <label htmlFor="query">키워드 검색</label>
+          <label htmlFor="query">
+            키워드 <span style={{ fontSize: "0.85rem", color: "#666", fontWeight: "normal" }}>(선택)</span>
+          </label>
           <input
             id="query"
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="예: ai productivity, 코딩 팁..."
+            placeholder="비워두면 '인기 뉴스' 검색 (쉼표로 구분 시 AND 검색, 예: 뉴스, 정치)"
             disabled={isLoading}
-            required
           />
         </div>
 
@@ -105,12 +113,14 @@ export default function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             id="contentType"
             value={contentType}
             onChange={(e) =>
-              setContentType(e.target.value as "shorts_like" | "all")
+              setContentType(e.target.value as "all" | "regular" | "longform" | "shorts")
             }
             disabled={isLoading}
           >
             <option value="all">전체</option>
-            <option value="shorts_like">Shorts 유사</option>
+            <option value="shorts">쇼츠 (1분 이하)</option>
+            <option value="regular">기본 (1분 ~ 5분)</option>
+            <option value="longform">장편 (5분 이상)</option>
           </select>
         </div>
 
@@ -139,7 +149,7 @@ export default function SearchForm({ onSearch, isLoading }: SearchFormProps) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="minDurationSec">최소 영상 길이 (초)</label>
+          <label htmlFor="minDurationSec">최소 길이 (초)</label>
           <input
             id="minDurationSec"
             type="text"
@@ -147,11 +157,12 @@ export default function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             onChange={handleMinDurationSecChange}
             placeholder="예: 60"
             disabled={isLoading}
+            style={{ width: "100%", maxWidth: "100%" }}
           />
         </div>
       </div>
 
-      <button type="submit" disabled={isLoading || !query.trim()}>
+      <button type="submit" disabled={isLoading}>
         {isLoading ? "검색 중..." : "검색"}
       </button>
     </form>

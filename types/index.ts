@@ -4,7 +4,7 @@ export interface YouTubeSearchRequest {
   timeframeDays: 7 | 30 | 90;
   regionCode?: string;
   language?: string;
-  contentType?: "shorts_like" | "all";
+  contentType?: "all" | "regular" | "longform" | "shorts";
   maxResults?: number;
   filters?: {
     subscriberMax?: number;

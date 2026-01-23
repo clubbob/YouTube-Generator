@@ -110,13 +110,24 @@ export async function searchYouTubeVideos(
       video.snippet?.thumbnails?.default?.url ||
       "";
 
-    // Shorts 필터링
-    if (
-      params.contentType === "shorts_like" &&
-      !isShortsLike(title, description, durationSec)
-    ) {
-      continue;
+    // 콘텐츠 타입 필터링
+    if (params.contentType === "shorts") {
+      // 쇼츠: 1분(60초) 이하
+      if (durationSec > 60) {
+        continue;
+      }
+    } else if (params.contentType === "regular") {
+      // 기본: 1분(60초) 초과 ~ 5분(300초) 미만
+      if (durationSec <= 60 || durationSec >= 300) {
+        continue;
+      }
+    } else if (params.contentType === "longform") {
+      // 장편: 5분(300초) 이상
+      if (durationSec < 300) {
+        continue;
+      }
     }
+    // params.contentType === "all"인 경우 필터링 없음
 
     // 구독자 수 필터링
     if (params.filters?.subscriberMax && subs > params.filters.subscriberMax) {

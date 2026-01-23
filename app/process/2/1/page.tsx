@@ -222,8 +222,14 @@ export default function NewsPage() {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // 쉼표로 구분된 키워드를 AND 조건(공백)으로 변환
+    let processedQuery = query.trim();
+    if (processedQuery.includes(",")) {
+      processedQuery = processedQuery.split(",").map(k => k.trim()).filter(k => k).join(" ");
+    }
+    
     // 카테고리 선택 또는 검색어 입력 중 하나는 필수
-    if (selectedCategories.length === 0 && !query.trim()) {
+    if (selectedCategories.length === 0 && !processedQuery) {
       setError("카테고리를 선택하거나 검색어를 입력해주세요.");
       return;
     }
@@ -236,10 +242,10 @@ export default function NewsPage() {
       const newsByCategoryMap: { [key: string]: NewsItem[] } = {};
 
       // 카테고리가 선택되고 검색어도 있는 경우: 각 카테고리 내에서 검색어 검색
-      if (selectedCategories.length > 0 && query.trim()) {
+      if (selectedCategories.length > 0 && processedQuery) {
         const categoryPromises = selectedCategories.map(async (category) => {
           // 카테고리 + 검색어 조합으로 검색 (예: "문화 사랑")
-          const searchTerm = `${category} ${query.trim()}`;
+          const searchTerm = `${category} ${processedQuery}`;
           const items = await fetchNews(searchTerm, 10, "sim"); // 인기순, 10개씩
           return {
             category,
@@ -267,8 +273,8 @@ export default function NewsPage() {
         }
       }
       // 검색어만 있는 경우: 검색어로만 검색
-      else if (query.trim()) {
-        const searchItems = await fetchNews(query.trim(), 10, "sim"); // 인기순, 10개
+      else if (processedQuery) {
+        const searchItems = await fetchNews(processedQuery, 10, "sim"); // 인기순, 10개
         newsByCategoryMap["검색 결과"] = searchItems.map((item: NewsItem) => ({
           ...item,
           category: undefined,
@@ -400,7 +406,7 @@ export default function NewsPage() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="뉴스 검색어를 입력하세요 (예: AI, 코딩, 기술)"
+                placeholder="뉴스 검색어를 입력하세요 (쉼표로 구분 시 AND 검색, 예: AI, 코딩, 기술)"
                 className="news-search-input"
               />
               <button type="submit" className="news-search-button" disabled={isLoading}>
