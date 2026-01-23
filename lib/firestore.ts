@@ -1,6 +1,6 @@
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore, Firestore } from "firebase-admin/firestore";
-import type { SearchCache, SavedVideo, ChannelConcept } from "@/types";
+import type { SearchCache, SavedVideo, ChannelConcept, PromptTemplate } from "@/types";
 
 // Firebase Admin 초기화 (서버 사이드 전용)
 let db: Firestore | null = null;
@@ -260,6 +260,137 @@ export async function deleteChannelConcept(conceptId: string): Promise<void> {
       .delete();
   } catch (error: any) {
     console.error("채널 컨셉 삭제 실패:", error.message);
+    throw error;
+  }
+}
+
+// Prompt Templates 관련 함수
+export async function getPromptTemplates(templateType?: string): Promise<PromptTemplate[]> {
+  const db = getDb();
+  if (!db) {
+    console.warn("Firebase가 설정되지 않아 프롬프트 템플릿을 불러올 수 없습니다.");
+    return [];
+  }
+  
+  try {
+    let query = db
+      .collection("prompt_templates")
+      .doc(USER_ID)
+      .collection("items")
+      .orderBy("updatedAt", "desc");
+    
+    if (templateType) {
+      query = query.where("templateType", "==", templateType) as any;
+    }
+    
+    const snapshot = await query.get();
+    
+    return snapshot.docs.map((doc) => ({
+      ...doc.data(),
+      templateId: doc.id,
+    } as PromptTemplate));
+  } catch (error: any) {
+    console.warn("프롬프트 템플릿 조회 실패:", error.message);
+    return [];
+  }
+}
+
+export async function getActivePromptTemplate(templateType: string): Promise<PromptTemplate | null> {
+  const db = getDb();
+  if (!db) {
+    console.warn("Firebase가 설정되지 않아 프롬프트 템플릿을 불러올 수 없습니다.");
+    return null;
+  }
+  
+  try {
+    const snapshot = await db
+      .collection("prompt_templates")
+      .doc(USER_ID)
+      .collection("items")
+      .where("templateType", "==", templateType)
+      .where("isActive", "==", true)
+      .orderBy("updatedAt", "desc")
+      .limit(1)
+      .get();
+    
+    if (snapshot.empty) {
+      return null;
+    }
+    
+    const doc = snapshot.docs[0];
+    return {
+      ...doc.data(),
+      templateId: doc.id,
+    } as PromptTemplate;
+  } catch (error: any) {
+    console.warn("활성 프롬프트 템플릿 조회 실패:", error.message);
+    return null;
+  }
+}
+
+export async function savePromptTemplate(template: PromptTemplate): Promise<string> {
+  const db = getDb();
+  if (!db) {
+    throw new Error("Firebase가 설정되지 않아 프롬프트 템플릿을 저장할 수 없습니다. Firebase 설정을 확인하세요.");
+  }
+  
+  try {
+    const now = new Date().toISOString();
+    
+    let docRef;
+    if (template.templateId) {
+      // 기존 문서 업데이트
+      docRef = db
+        .collection("prompt_templates")
+        .doc(USER_ID)
+        .collection("items")
+        .doc(template.templateId);
+      
+      // templateId를 제외한 업데이트 데이터 생성
+      const { templateId, ...updateData } = template;
+      await docRef.update({
+        ...updateData,
+        updatedAt: now,
+      });
+      return template.templateId;
+    } else {
+      // 새 문서 생성
+      docRef = db
+        .collection("prompt_templates")
+        .doc(USER_ID)
+        .collection("items")
+        .doc();
+      
+      const templateData: PromptTemplate = {
+        ...template,
+        isActive: template.isActive !== undefined ? template.isActive : true,
+        createdAt: template.createdAt || now,
+        updatedAt: now,
+      };
+      await docRef.set(templateData);
+      return docRef.id;
+    }
+  } catch (error: any) {
+    console.error("프롬프트 템플릿 저장 실패:", error.message);
+    throw error;
+  }
+}
+
+export async function deletePromptTemplate(templateId: string): Promise<void> {
+  const db = getDb();
+  if (!db) {
+    throw new Error("Firebase가 설정되지 않아 프롬프트 템플릿을 삭제할 수 없습니다.");
+  }
+  
+  try {
+    await db
+      .collection("prompt_templates")
+      .doc(USER_ID)
+      .collection("items")
+      .doc(templateId)
+      .delete();
+  } catch (error: any) {
+    console.error("프롬프트 템플릿 삭제 실패:", error.message);
     throw error;
   }
 }

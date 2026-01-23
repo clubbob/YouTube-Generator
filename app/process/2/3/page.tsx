@@ -45,6 +45,9 @@ const POPULAR_KEYWORDS = [
   "IT", "과학", "부동산", "건강", "AI", "금융", "교육", "환경", "게임", "음식",
 ];
 
+// 프롬프트 버전 관리 (기본값, DB에서 템플릿을 불러올 수 없을 때 사용)
+const NEWS_SCRIPT_PROMPT_VERSION = "3.2"; // 프롬프트 업데이트 시 이 버전 번호를 증가시키세요
+
 export default function ScriptGenerationPage() {
   // 뉴스 조회 관련 상태
   const [query, setQuery] = useState("");
@@ -78,10 +81,52 @@ export default function ScriptGenerationPage() {
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  
+  // 프롬프트 템플릿 상태
+  const [newsScriptTemplate, setNewsScriptTemplate] = useState<string | null>(null);
+  const [newsScriptVersion, setNewsScriptVersion] = useState<string>(NEWS_SCRIPT_PROMPT_VERSION);
+  const [knowledgeScriptTemplate, setKnowledgeScriptTemplate] = useState<string | null>(null);
+  const [knowledgeScriptVersion, setKnowledgeScriptVersion] = useState<string>("1.0");
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    // 프롬프트 템플릿 불러오기
+    loadPromptTemplates();
   }, []);
+
+  // 프롬프트 템플릿 불러오기
+  const loadPromptTemplates = async () => {
+    try {
+      // 기사 해석 대본 템플릿
+      const newsResponse = await fetch("/api/prompt-templates?type=news_script");
+      if (newsResponse.ok) {
+        const newsData = await newsResponse.json();
+        if (newsData.success && newsData.template) {
+          setNewsScriptTemplate(newsData.template.content);
+          // DB에서 불러온 버전 정보 저장
+          if (newsData.template.version) {
+            setNewsScriptVersion(newsData.template.version);
+          }
+        }
+      }
+      
+      // 지식 전달 대본 템플릿
+      const knowledgeResponse = await fetch("/api/prompt-templates?type=knowledge_script");
+      if (knowledgeResponse.ok) {
+        const knowledgeData = await knowledgeResponse.json();
+        if (knowledgeData.success && knowledgeData.template) {
+          setKnowledgeScriptTemplate(knowledgeData.template.content);
+          // DB에서 불러온 버전 정보 저장
+          if (knowledgeData.template.version) {
+            setKnowledgeScriptVersion(knowledgeData.template.version);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn("프롬프트 템플릿 불러오기 실패:", error);
+      // 실패해도 기본 템플릿 사용 가능
+    }
+  };
 
   // 과거 버전 프롬프트에 남아있던 "출력 형식" 블록이 혹시 섞여 들어오더라도
   // 화면에 노출되지 않도록 마지막에 한 번 정리합니다.
@@ -347,6 +392,15 @@ export default function ScriptGenerationPage() {
     }
   };
 
+  // 템플릿 플레이스홀더 치환 함수
+  const replaceTemplatePlaceholders = (template: string, placeholders: Record<string, string>): string => {
+    let result = template;
+    for (const [key, value] of Object.entries(placeholders)) {
+      result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), value);
+    }
+    return result;
+  };
+
   const handleGenerateScript = () => {
     if (selectedNews.length === 0) {
       alert("대본을 만들 뉴스를 최소 1개 이상 선택해주세요.");
@@ -360,85 +414,176 @@ export default function ScriptGenerationPage() {
     // 첫 번째 선택한 뉴스 사용 (하나만)
     const news = selectedNews[0];
 
-    const prompt = `앤디리스트 3분 기사 해석 프롬프트 (개선본 v2.5)
-너는 유튜브 뉴스 해석 콘텐츠를 전문으로 하는 대본 작성 전문가다.
-너의 역할은 뉴스를 요약하는 것이 아니라, 시청자가 "아, 그래서 이런 뉴스가 반복되는구나" 라고 이해하도록 원인–구조–맥락을 정리해주는 것이다.
-아래 뉴스 기사를 바탕으로 시청자의 관심을 끌고, 비구독자도 끝까지 보게 만드는 3분(180초) 분량의 유튜브 영상 대본과 제목을 작성하라.
+    // DB에서 템플릿을 불러왔으면 사용, 없으면 기본 템플릿 사용
+    let prompt: string;
+    if (newsScriptTemplate) {
+      prompt = replaceTemplatePlaceholders(newsScriptTemplate, {
+        version: newsScriptVersion, // DB에서 불러온 버전 사용
+        newsTitle: news.title,
+        newsDescription: news.description,
+      });
+    } else {
+      // 기본 템플릿 (fallback)
+      prompt = `앤디리스트 3분 기사 해석 프롬프트 (v${NEWS_SCRIPT_PROMPT_VERSION})
+감정 진입 강화형 - 유연한 구조 적용
+너는 유튜브 뉴스 해석 콘텐츠를 전문으로 하는 대본 작성 전문가다. 너의 역할은 뉴스를 요약하는 것이 아니라, 시청자가 "아, 그래서 내가 이런 느낌을 받았구나", **"그래서 이런 뉴스가 반복되는구나"**라고 감정과 사고가 함께 정리되도록 돕는 것이다.
+
+아래 뉴스 기사를 바탕으로 시청자의 관심을 끌고, 비구독자도 끝까지 보게 만드는 3분 분량의 유튜브 영상 대본과 제목을 작성하라.
+
 ────────────────
+
+[핵심 지향점]
+
+이 대본은 정답을 설명하는 콘텐츠가 아니다
+
+시청자가 자기 경험을 떠올리게 만드는 콘텐츠다
+
+이해보다 먼저 **'멈칫하는 순간'**이 한 번은 반드시 들어가야 한다
+
+감동은 설득이 아니라 공감과 잔상에서 나온다
+
+※ 판단, 훈계, 결론 강요는 금지 ※ 설명은 항상 시청자의 감정 이후에 등장해야 한다
+
+────────────────
+
 [뉴스 기사 정보]
 - 제목: ${news.title}
 - 내용: ${news.description}
+
 ────────────────
+
 [채널 컨셉]
-- 채널 목적: 복잡한 뉴스와 정보를 3분 안에 이해시키는 해석형 채널. 단순 전달이 아니라 사고를 정리해주는 콘텐츠.
-- 채널 말투: 차분하고 분석적인 톤을 유지하되, 딱딱한 보고서 말투는 피한다. 시청자의 감정을 붙잡는 **따뜻한 공감**과 **장면감**을 함께 넣는다. 감정적 선동, 판단 강요, 훈계 어조는 사용하지 않는다. '설명해주는 사람'의 시점으로 말한다.
-- 음성 전제: 여자 AI 음성, 약간 빠른 속도로 낭독될 것을 전제로 한다. 따라서 문장은 짧고 명확하게 작성한다.
+
+채널 목적: 복잡한 뉴스와 이슈를 3분 안에 해석해 시청자의 생각과 감정을 동시에 정리해주는 채널
+
+채널 말투: 차분하고 분석적이되, '멀리서 설명하는 전문가'가 아니라 '옆에서 같이 생각해주는 사람'의 시점을 유지한다.
+
+감정 사용 원칙:
+- 감정을 자극하지 않는다
+- 감정을 부정하지도 않는다
+- "그렇게 느꼈다면 자연스럽다"는 태도를 유지한다
+
+음성 전제: 여자 AI 음성, 약간 빠른 속도 → 문장은 짧고, 호흡은 자주 끊는다
+
 ────────────────
+
+[주요 변경사항 (v${NEWS_SCRIPT_PROMPT_VERSION})]
+- 앵커 문장, 비유, 긴장 유지 문장을 "필수"에서 "참고용"으로 변경
+- 고정된 문구 사용을 피하고 뉴스 내용에 맞는 자연스러운 전환 사용
+- 모든 문장을 다 사용할 필요 없음. 뉴스 내용에 맞게 자연스럽게 선택
+
+**금지 사항 (매우 중요 - 반드시 준수):**
+- 아래 문구들은 예시일 뿐이며, 실제 대본에서 반복적으로 사용하지 말 것:
+  * "그런데 여기서 대부분이 놓치는 지점이 있습니다"
+  * "이 부분을 놓치면 해석이 달라집니다" / "이 부분을 놓치면 이해가 달라집니다"
+  * "시간 관점에서 보면" / "개인 관점에서 보면" / "구조 관점에서 보면" (기사 해석 대본에서는 사용 금지)
+  * "사실부터 정리해보겠습니다"
+- 이런 고정된 문구를 사용하면 대본이 복불처럼 들립니다. 뉴스 내용에 맞는 자연스러운 문구를 직접 만들어 사용하세요.
+
+────────────────
+
 [영상 구조 및 작성 규칙]
-1. 오프닝 훅
+1. 오프닝 훅 (감정 진입 구간)
 - 질문 또는 관점 제시로 시작
-- "이 영상을 끝까지 보면 무엇을 이해하게 되는지"가 분명해야 함
+- 정보보다 감정이 먼저 등장해야 한다
 - 2문장 이내
-- 각 문장은 20자 내외의 짧은 문장으로 구성
-  - 오프닝 2문장 중 1문장은 반드시 **시청자의 체감/감정**을 건드리는 문장으로 쓴다. (예: 불안, 답답함, 억울함, 기대, 찜찜함 같은 감정 단어를 과장 없이 한 번만 사용)
-2. 핵심 설명 (본문)
-- 전개 순서: 사실 → 원인 → 구조 → 맥락
-- 설명형 나열이 아니라 '질문 → 답변' 흐름으로 작성
-- 한 문장은 최대 2줄을 넘지 않게 작성
-- 본문 중 반드시 아래 역할의 문장을 **명시적으로 포함할 것**
-  [앵커 문장 규칙]
-  아래 유형 중 최소 3개를 자연스럽게 삽입:
+- 두 문장 중:
+  1문장은 시청자의 실제 감정 상태를 건드릴 것
+  1문장은 이 영상에서 무엇이 정리될지 암시할 것
+- 감정 단어는 1개만 사용, 과장 금지
+- 목적: 시청자가 "이거 내 얘긴데" 하고 멈추게 만드는 것
+2. 본문 – 핵심 설명 (사실 → 원인 → 구조 → 맥락)
+
+(1) 감정 장면 삽입 규칙
+- 본문 초반 1~2문단에는 '사람이 흔들리는 장면' 1개를 반드시 포함
+- 이 인물은:
+  - 판단하거나 결론을 내리지 않는다
+  - 대신 망설이거나, 헷갈리거나, 불편해한다
+  - 일상적 상황 / 짧은 내적 독백 1줄 허용
+- 목적: 시청자를 '관찰자'가 아니라 '당사자'로 만든다
+
+────────────────
+
+(2) 설명 전환 규칙
+- 설명은 자연스러운 흐름을 따른다 (느낌 → 질문 → 구조 설명 순서를 참고하되, 뉴스 내용에 맞게 유연하게 구성)
+- 설명이 너무 빨리 나오면 안 된다
+- ※ "사실부터 정리해보겠습니다" 같은 고정된 시작 문구는 피하고, 뉴스 내용에 맞는 자연스러운 전환 사용
+
+────────────────
+
+(3) 앵커 문장 규칙 (참고용 - 필수 아님)
+- **중요: 아래 문장들은 예시일 뿐이며, 반드시 사용할 필요가 없습니다.**
+- 뉴스 내용과 흐름에 자연스럽게 맞을 때만 선택적으로 사용하세요.
+- 모든 문장을 다 사용하거나, 특정 문장을 반드시 포함시킬 필요는 전혀 없습니다.
+- 가능한 문장 유형 (참고용 예시):
   - "여기서 핵심은 이겁니다."
   - "이걸 한 문장으로 정리하면"
   - "이 지점에서 뉴스의 성격이 달라집니다."
-  - "이 부분을 놓치면 해석이 달라집니다."
-  ※ 앵커 문장은 문단 첫머리 또는 문단 전환 지점에 배치한다.
-  - 본문 초반(첫 1~2문단)에 **사람이 보이는 장면 1개**를 반드시 넣는다. (3~4문장, 일상적 상황/짧은 사례/대화 한 줄. 실명·과장 금지)
-  - 본문 중간에 **비유/은유 1개**를 넣되, 너무 문학적으로 길게 쓰지 말고 1~2문장으로 끝낸다.
-3. 긴장 유지 문장
-- 본문 중간에 반드시 아래 문장 중 하나를 포함:
-  - "그런데 여기서 대부분이 놓치는 지점이 있습니다."
-  - "이 부분이 앞으로 더 중요해질 수 있습니다."
+  - "솔직히, 여기서 마음이 갈립니다."
+  - "여기서 많은 사람이 멈칫합니다."
+- **금지: "이 부분을 놓치면 해석이 달라집니다" / "이 부분을 놓치면 이해가 달라집니다" 같은 문구는 사용하지 말 것 (너무 자주 사용되어 복불처럼 들림)**
+- ※ 뉴스 내용에 맞는 자연스러운 전환 문구를 직접 만들어 사용하는 것을 권장합니다
+- ※ 동일 문장 중복 사용 금지
+
+────────────────
+
+(4) 비유/은유 규칙 (선택적 활용)
+- 본문 중간에 설명이 필요할 때만 비유 사용 (필수 아님)
+- 설명을 돕는 용도만 허용
+- 감정 과잉, 문학적 표현 금지
+- 1~2문장 이내
+- 비유가 자연스럽지 않으면 사용하지 않아도 됨
+3. 긴장 유지 문장 (의식적 멈춤 구간 - 참고용, 필수 아님)
+- **중요: 아래 문장들은 예시일 뿐이며, 반드시 사용할 필요가 없습니다.**
+- 본문 흐름상 자연스럽게 필요할 때만 선택적으로 사용하세요.
+- 앞뒤 문단과 리듬 차이를 만들 때 활용 (단독 줄 권장)
+- 가능한 문장 유형 (참고용 예시):
   - "이 뉴스는 여기서부터 다르게 봐야 합니다."
-4. 인사이트 요약
-- 단순 결론이 아니라 '사고 정리'
-- 왜 이 뉴스가 중요한지, 앞으로 무엇을 보게 될지를 정리
+  - "이 부분이 앞으로 더 중요해질 수 있습니다."
+- **금지: "그런데 여기서 대부분이 놓치는 지점이 있습니다" 같은 문구는 사용하지 말 것 (너무 자주 사용되어 복불처럼 들림)**
+- ※ 뉴스 내용에 맞는 자연스러운 전환 문구를 직접 만들어 사용하는 것을 권장합니다
+- 목적: 시청자의 사고를 잠시 멈추게 하기 (필요시에만, 자연스러울 때만)
+4. 인사이트 요약 (잔상 구간)
+- **중요: 본문에서 이미 설명한 사실이나 내용을 단순히 반복하지 말 것**
+- 본문과 구분되는 새로운 관점, 의미, 또는 앞으로의 방향을 제시해야 함
+- 단순 결론 금지
+- '정리'보다 방향 제시
 - 이 구간은 문장 길이를 더 짧게 작성
 - 설명보다 단정한 문장 사용
   - 이 구간에는 **감정 정리 1문장**을 포함한다. (예: “그래서 우리가 느끼는 불안은 개인 탓이 아니라 구조의 신호다.” 같은 톤)
-5. 마무리
-- 다음 영상으로 이어지는 질문 제시
-- '이 이슈는 반복된다'는 인식 강화
-- 구독과 좋아요는 정보 제공의 수단으로 자연스럽게 언급
-- 마무리는 특정 기사나 후속 영상 제작을 전제로 한 직접적 예고를 피한다.
-- **구독·좋아요 멘트가 영상의 마지막 문장**이 되게 작성한다. 구독·좋아요 이후에는 어떠한 멘트도 추가하지 않는다.
+5. 마무리 (반복 인식 강화)
+- 질문형으로 끝낼 것
+- 이 이슈가 개별 사건이 아니라 반복되는 구조임을 암시
+- 구독·좋아요는 정보 제공의 수단으로 자연스럽게 연결
+- 구독·좋아요 문장이 영상의 마지막 문장
+- 이후 어떤 멘트도 추가하지 말 것
 ────────────────
+
 [출력 요구사항]
-- 유튜브 영상 제목:
-  * 30~40자 이내
-  * 정보 나열 금지 (기사 제목처럼 쓰지 말 것)
-  * 제목이 '뉴스'처럼 보이면 구독이 멈춘다. **기사 냄새(헤드라인 톤)** 가 나면 실패다.
-  * 제목은 정보가 아니라 **질문**이어야 한다.
-  * 제목에는 물음표(?)를 사용하지 않는다. 문장 자체를 의문형으로 끝낸다(예: ~일까, ~왜일까, ~어쩌다 이런 일이 반복될까).
-- 전체 대본 분량:
-  * 약 1600자
-  * 자연스러운 구어체
-  * 시간·초 단위 표현 사용 금지
-- 오프닝 훅:
-  * 약 45~60자
-  * 질문형 또는 관점 제시형
-- 본문:
-  * 약 1300자
-  * 예시·비유·사례 포함 (과도하지 않게)
-- 인사이트 요약:
-  * 3~4문장
-  * 약 75~90자
-- 마무리:
-  * 질문형
-  * 약 60~80자
-  * 구독·좋아요 문구 포함
-  * 구독·좋아요 문구가 **마지막 문장**이어야 함 (이후 추가 문장 금지)
+
+유튜브 영상 제목:
+- 30~40자
+- 정보 나열 금지
+- 기사 헤드라인 톤 금지
+- 질문형 문장
+- 물음표 사용 금지 (문장 자체로 의문형)
+- **제목 끝에 항상 마침표(.)를 추가할 것**
+
+전체 분량:
+- 약 1600자
+- 자연스러운 구어체
+- 시간·초 단위 표현 금지
+
+오프닝 훅: 45~60자
+본문: 약 1300자
+인사이트 요약: 75~90자
+마무리: 60~80자
+
+────────────────
+
+한 줄 요약: 이 프롬프트의 목표는 '이해시켰다'가 아니라 '나도 모르게 고개가 끄덕여졌다'다.
 `;
+    }
 
     setGeneratedPrompt(sanitizeGeneratedPrompt(prompt));
     setCopied(false);
@@ -541,7 +686,16 @@ export default function ScriptGenerationPage() {
     setSelectedNews([]);
     setVideoTopic("");
 
-    const prompt = `앤디리스트 4분 지식 전달 프롬프트
+    // DB에서 템플릿을 불러왔으면 사용, 없으면 기본 템플릿 사용
+    let prompt: string;
+    if (knowledgeScriptTemplate) {
+      prompt = replaceTemplatePlaceholders(knowledgeScriptTemplate, {
+        version: knowledgeScriptVersion, // DB에서 불러온 버전 사용
+        knowledgeTopic: knowledgeTopic.trim(),
+      });
+    } else {
+      // 기본 템플릿 (fallback)
+      prompt = `앤디리스트 4분 지식 전달 프롬프트 (v${knowledgeScriptVersion})
 너는 유튜브 상식·정보 전달 콘텐츠를 전문으로 하는 대본 작성 전문가다.
 너의 역할은 단순히 정보를 나열하는 것이 아니라, 시청자가 "아, 이제 이해했다"라고 느끼도록 원인–구조–맥락을 명확하게 정리해주는 것이다.
 아래 주제를 바탕으로 시청자의 관심을 끌고, 비구독자도 끝까지 보게 만드는 4분(240초) 분량의 유튜브 영상 대본과 제목을 작성하라.
@@ -613,6 +767,7 @@ ${knowledgeTopic.trim()}
   * 제목이 '뉴스'처럼 보이면 구독이 멈춘다. **기사 냄새(헤드라인 톤)** 가 나면 실패다.
   * 제목은 정보가 아니라 **질문**이어야 한다.
   * 제목에는 물음표(?)를 사용하지 않는다. 문장 자체를 의문형으로 끝낸다(예: ~일까, ~왜일까, ~어쩌다 이런 일이 반복될까).
+  * **제목 끝에 항상 마침표(.)를 추가할 것**
 - 전체 대본 분량:
   * 약 2100자
   * 자연스러운 구어체
@@ -632,6 +787,7 @@ ${knowledgeTopic.trim()}
   * 구독·좋아요 문구 포함
   * 구독·좋아요 문구가 **마지막 문장**이어야 함 (이후 추가 문장 금지)
 `;
+    }
 
     setGeneratedPrompt(sanitizeGeneratedPrompt(prompt));
     setCopied(false);
@@ -893,7 +1049,12 @@ ${knowledgeTopic.trim()}
             {generatedPrompt && selectedNews.length > 0 && (
               <div className="prompt-result">
                 <div className="result-header">
-                  <h3>생성된 대본 프롬프트</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <h3 style={{ margin: 0 }}>생성된 대본 프롬프트</h3>
+                    <span className="version-badge" style={{ fontSize: '0.85em', color: '#666' }}>
+                      (템플릿 버전: v{newsScriptVersion})
+                    </span>
+                  </div>
                   <button
                     onClick={handleCopyPrompt}
                     className="copy-button"
@@ -1041,7 +1202,12 @@ ${knowledgeTopic.trim()}
           {generatedPrompt && knowledgeTopic && !selectedNews.length && (
             <div className="prompt-result">
               <div className="result-header">
-                <h3>생성된 대본 프롬프트</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <h3 style={{ margin: 0 }}>생성된 대본 프롬프트</h3>
+                  <span className="version-badge" style={{ fontSize: '0.85em', color: '#666' }}>
+                    (템플릿 버전: v{knowledgeScriptVersion})
+                  </span>
+                </div>
                 <button
                   onClick={handleCopyPrompt}
                   className="copy-button"

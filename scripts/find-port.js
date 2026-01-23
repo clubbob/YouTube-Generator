@@ -74,10 +74,8 @@ async function main() {
     
     // 프로세스가 시작되었는지 확인
     nextDev.on('spawn', () => {
-      // 서버가 시작되면 약간의 지연 후 확인
-      setTimeout(() => {
-        // Next.js는 자동으로 "Ready" 메시지를 출력합니다
-      }, 100);
+      console.log(`\n🚀 Next.js 개발 서버가 포트 ${port}번에서 시작 중입니다.`);
+      console.log(`   빌드가 완료되면 "Ready" 메시지가 표시됩니다. 잠시만 기다려주세요.\n`);
     });
     
     nextDev.on('error', (error) => {

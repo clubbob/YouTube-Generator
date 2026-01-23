@@ -70,3 +70,13 @@ export interface ChannelConcept {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export interface PromptTemplate {
+  templateId?: string;
+  templateType: "news_script" | "knowledge_script";
+  version: string;
+  content: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
