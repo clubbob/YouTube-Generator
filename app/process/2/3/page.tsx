@@ -129,6 +129,12 @@ export default function ScriptGenerationPage() {
 - 제목: {newsTitle}
 - 내용: {newsDescription}
 
+**중요: 입력 본문이 짧을 경우 (200자 미만):**
+- 위 내용이 요약본일 가능성이 높습니다
+- 기사 링크를 직접 확인하여 더 자세한 정보를 찾아야 합니다
+- 가능한 한 구체적인 사실, 숫자, 이름, 제품명 등을 포함하여 대본을 작성하세요
+- 요약본만으로는 부족하므로, 일반적인 설명보다는 기사 제목과 요약본에 나온 구체적 정보를 최대한 활용하세요
+
 **뉴스 기사 정보 활용 원칙 (매우 중요 - 반드시 준수):**
 
 1. **뉴스 기사 내용을 먼저 읽어야 함:**
@@ -315,14 +321,19 @@ export default function ScriptGenerationPage() {
 - **제목 끝에 항상 마침표(.)를 추가할 것**
 
 전체 분량:
-- 약 1700자 이상 (빠른 속도로 읽을 것을 고려하여 충분한 분량 확보)
+- **최소 1700자 이상 필수** (빠른 속도로 읽을 것을 고려하여 충분한 분량 확보)
+- 1700자 미만으로 작성하는 것은 절대 금지
 - 자연스러운 구어체
 - 시간·초 단위 표현 금지
 
 오프닝 훅: 45~60자
-본문: 약 1400자 이상
+본문: **최소 1400자 이상 필수** (전체 분량 1700자 이상을 달성하기 위해 필수)
 인사이트 요약: 75~90자
 마무리: 60~80자
+
+**분량 검증:**
+- 대본 작성 후 반드시 전체 글자 수를 확인하세요
+- 1700자 미만이면 추가 내용을 보강하여 반드시 1700자 이상으로 작성하세요
 
 ────────────────
 
@@ -402,12 +413,14 @@ export default function ScriptGenerationPage() {
               setNewsScriptVersion(autoVersion);
             }
           } else {
-            // 내용이 동일하면 DB 템플릿 사용
-            console.log("[Template Update] 템플릿이 최신 상태입니다.");
-            setNewsScriptTemplate(newsData.template.content);
-            if (newsData.template.version) {
-              setNewsScriptVersion(newsData.template.version);
-            }
+            // 내용이 동일하더라도 최신 템플릿과 버전 사용 (일관성 유지)
+            const today = new Date();
+            const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
+            const autoVersion = `${NEWS_SCRIPT_PROMPT_VERSION}.${dateStr}`;
+            
+            console.log("[Template Update] 템플릿 내용이 최신 상태입니다. 버전:", autoVersion);
+            setNewsScriptTemplate(latestTemplate);
+            setNewsScriptVersion(autoVersion); // 항상 최신 버전 형식 사용
           }
         } else {
           // 템플릿이 없으면 최신 템플릿을 DB에 저장
@@ -770,19 +783,28 @@ export default function ScriptGenerationPage() {
             if (contentData.error) {
               console.warn("[Script Generation] Extraction error:", contentData.error);
             }
+            // 본문 추출 실패 시 경고 표시
+            setError("⚠️ 전체 기사 본문을 가져오지 못했습니다. 요약본만 사용되므로 대본이 짧을 수 있습니다. 기사 링크를 직접 확인해주세요.");
           }
         } else {
           console.warn("[Script Generation] ⚠️ Content API request failed, using description");
+          setError("⚠️ 전체 기사 본문을 가져오지 못했습니다. 요약본만 사용되므로 대본이 짧을 수 있습니다.");
         }
       }
     } catch (err) {
       console.warn("[Script Generation] ⚠️ Failed to fetch full content, using description:", err);
       // 본문 가져오기 실패 시 description 사용
+      setError("⚠️ 전체 기사 본문을 가져오지 못했습니다. 요약본만 사용되므로 대본이 짧을 수 있습니다.");
     }
     
     // 전체 본문 길이 및 출처 저장 (확인용)
     setFullContentLength(fullContent.length);
     setContentSource(contentSourceType);
+    
+    // 본문이 너무 짧으면(200자 미만) 경고 추가
+    if (fullContent.length < 200 && contentSourceType === "description") {
+      setError("⚠️ 경고: 입력 본문이 너무 짧습니다 (" + fullContent.length + "자). 전체 기사 본문을 가져오지 못해 요약본만 사용됩니다. 대본이 부족할 수 있으니 기사 링크를 직접 확인해주세요.");
+    }
 
     // DB에서 템플릿을 불러왔으면 사용, 없으면 기본 템플릿 사용
     let prompt: string;
@@ -822,6 +844,13 @@ export default function ScriptGenerationPage() {
 [뉴스 기사 정보]
 - 제목: ${news.title}
 - 내용: ${fullContent}
+
+${fullContent.length < 200 ? `**⚠️ 중요: 입력 본문이 짧습니다 (${fullContent.length}자).**
+- 위 내용이 요약본일 가능성이 높습니다
+- 기사 링크를 직접 확인하여 더 자세한 정보를 찾아야 합니다
+- 가능한 한 구체적인 사실, 숫자, 이름, 제품명 등을 포함하여 대본을 작성하세요
+- 요약본만으로는 부족하므로, 일반적인 설명보다는 기사 제목과 요약본에 나온 구체적 정보를 최대한 활용하세요
+- 하지만 반드시 1700자 이상의 충분한 분량의 대본을 작성해야 합니다` : ''}
 
 **뉴스 기사 정보 활용 원칙 (매우 중요 - 반드시 준수):**
 
@@ -1009,14 +1038,19 @@ export default function ScriptGenerationPage() {
 - **제목 끝에 항상 마침표(.)를 추가할 것**
 
 전체 분량:
-- 약 1700자 이상 (빠른 속도로 읽을 것을 고려하여 충분한 분량 확보)
+- **최소 1700자 이상 필수** (빠른 속도로 읽을 것을 고려하여 충분한 분량 확보)
+- 1700자 미만으로 작성하는 것은 절대 금지
 - 자연스러운 구어체
 - 시간·초 단위 표현 금지
 
 오프닝 훅: 45~60자
-본문: 약 1400자 이상
+본문: **최소 1400자 이상 필수** (전체 분량 1700자 이상을 달성하기 위해 필수)
 인사이트 요약: 75~90자
 마무리: 60~80자
+
+**분량 검증:**
+- 대본 작성 후 반드시 전체 글자 수를 확인하세요
+- 1700자 미만이면 추가 내용을 보강하여 반드시 1700자 이상으로 작성하세요
 
 ────────────────
 

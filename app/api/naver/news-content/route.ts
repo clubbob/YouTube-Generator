@@ -37,31 +37,72 @@ export async function GET(request: NextRequest) {
 
     const html = await response.text();
     
-    // 간단한 HTML 파싱으로 본문 추출 시도
-    // 네이버 뉴스의 경우 일반적으로 article 태그나 특정 클래스를 가진 div에 본문이 있습니다
+    // 네이버 뉴스 본문 추출 - 다양한 패턴 시도
     let content = "";
     
-    // 네이버 뉴스 본문 추출 시도
-    const naverMatch = html.match(/<div[^>]*id="articleBodyContents"[^>]*>([\s\S]*?)<\/div>/i) ||
-                       html.match(/<div[^>]*class="[^"]*article_body[^"]*"[^>]*>([\s\S]*?)<\/div>/i) ||
-                       html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+    // 패턴 1: 네이버 뉴스 표준 본문 ID들
+    const patterns = [
+      /<div[^>]*id="articleBodyContents"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*id="articleBody"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*id="_article_body_contents"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*class="[^"]*article_body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*class="[^"]*articleBody[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*class="[^"]*article-body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*class="[^"]*article_content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*class="[^"]*articleContent[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      /<article[^>]*id="articleBody"[^>]*>([\s\S]*?)<\/article>/i,
+      /<article[^>]*class="[^"]*article[^"]*"[^>]*>([\s\S]*?)<\/article>/i,
+      /<section[^>]*class="[^"]*article[^"]*"[^>]*>([\s\S]*?)<\/section>/i,
+      /<div[^>]*class="[^"]*news_end_body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*class="[^"]*article_view[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+    ];
     
-    if (naverMatch && naverMatch[1]) {
-      content = naverMatch[1];
-    } else {
-      // 일반적인 article 태그나 본문 클래스 찾기
-      const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i) ||
-                          html.match(/<div[^>]*class="[^"]*content[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
-      
-      if (articleMatch && articleMatch[1]) {
-        content = articleMatch[1];
-      } else {
-        // 본문을 찾지 못한 경우 description 반환
-        return NextResponse.json({
-          content: "",
-          error: "본문을 추출할 수 없습니다. 기사 링크를 직접 확인해주세요.",
-        });
+    for (const pattern of patterns) {
+      const match = html.match(pattern);
+      if (match && match[1] && match[1].trim().length > 100) {
+        content = match[1];
+        console.log("[News Content] Content found using pattern:", pattern.toString().substring(0, 50));
+        break;
       }
+    }
+    
+    // 패턴으로 찾지 못한 경우, 더 넓은 범위로 시도
+    if (!content || content.trim().length < 100) {
+      // article 태그 전체 시도 (더 긴 내용)
+      const articleMatches = html.match(/<article[^>]*>([\s\S]{500,}?)<\/article>/i);
+      if (articleMatches && articleMatches[1]) {
+        content = articleMatches[1];
+        console.log("[News Content] Content found using broad article tag");
+      }
+    }
+    
+    if (!content || content.trim().length < 100) {
+      console.warn("[News Content] Failed to extract content. HTML length:", html.length);
+      console.warn("[News Content] Trying to find any div with substantial content...");
+      
+      // 마지막 시도: 본문처럼 보이는 긴 div 찾기
+      const allDivs = html.match(/<div[^>]*>([\s\S]{300,}?)<\/div>/gi);
+      if (allDivs) {
+        for (const div of allDivs) {
+          const text = div.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+          if (text.length > 200 && !text.includes("function") && !text.includes("script")) {
+            content = div;
+            console.log("[News Content] Content found using fallback div search");
+            break;
+          }
+        }
+      }
+    }
+    
+    if (!content || content.trim().length < 100) {
+      return NextResponse.json({
+        content: "",
+        error: "본문을 추출할 수 없습니다. 기사 링크를 직접 확인해주세요.",
+        debug: {
+          htmlLength: html.length,
+          url: url,
+        },
+      });
     }
 
     // HTML 태그 제거 및 정리
