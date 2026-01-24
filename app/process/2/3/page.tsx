@@ -79,6 +79,10 @@ export default function ScriptGenerationPage() {
   const [videoTopic, setVideoTopic] = useState("");
   const [additionalRequirements, setAdditionalRequirements] = useState("");
   const [generatedPrompt, setGeneratedPrompt] = useState("");
+  const [generatedScript, setGeneratedScript] = useState(""); // 실제 생성된 대본
+  const [usedPrompt, setUsedPrompt] = useState(""); // 대본 생성에 사용된 프롬프트
+  const [fullContentLength, setFullContentLength] = useState(0); // 가져온 전체 본문 길이
+  const [showUsedPrompt, setShowUsedPrompt] = useState(false); // 사용된 프롬프트 표시 여부
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   
@@ -94,7 +98,240 @@ export default function ScriptGenerationPage() {
     loadPromptTemplates();
   }, []);
 
-  // 프롬프트 템플릿 불러오기
+  // 최신 fallback 템플릿 내용 추출 (플레이스홀더 변환)
+  const getLatestNewsScriptTemplate = (): string => {
+    return `앤디리스트 3분 기사 해석 프롬프트 (v{version})
+감정 진입 강화형 - 유연한 구조 적용
+너는 유튜브 뉴스 해석 콘텐츠를 전문으로 하는 대본 작성 전문가다. 너의 역할은 뉴스를 요약하는 것이 아니라, 시청자가 "아, 그래서 내가 이런 느낌을 받았구나", **"그래서 이런 뉴스가 반복되는구나"**라고 감정과 사고가 함께 정리되도록 돕는 것이다.
+
+아래 뉴스 기사를 바탕으로 시청자의 관심을 끌고, 비구독자도 끝까지 보게 만드는 3분 분량의 유튜브 영상 대본과 제목을 작성하라.
+
+**중요: 반드시 아래 [뉴스 기사 정보] 섹션의 내용을 먼저 읽고, 그 내용을 기반으로 대본을 작성해야 한다. 뉴스 기사 정보를 읽지 않고 일반적인 설명만 하는 것은 절대 금지다.**
+
+────────────────
+
+[핵심 지향점]
+
+이 대본은 정답을 설명하는 콘텐츠가 아니다
+
+시청자가 자기 경험을 떠올리게 만드는 콘텐츠다
+
+이해보다 먼저 **'멈칫하는 순간'**이 한 번은 반드시 들어가야 한다
+
+감동은 설득이 아니라 공감과 잔상에서 나온다
+
+※ 판단, 훈계, 결론 강요는 금지 ※ 설명은 항상 시청자의 감정 이후에 등장해야 한다
+
+────────────────
+
+[뉴스 기사 정보]
+- 제목: {newsTitle}
+- 내용: {newsDescription}
+
+**뉴스 기사 정보 활용 원칙 (매우 중요 - 반드시 준수):**
+
+1. **뉴스 기사 내용을 먼저 읽어야 함:**
+   - 위 뉴스 기사 제목과 내용을 반드시 먼저 읽고 이해한 후 대본 작성
+   - 뉴스 기사 정보를 읽지 않고 일반적인 설명만 하는 것은 절대 금지
+
+2. **구체적 정보 반드시 포함:**
+   - 뉴스 기사에 나온 모든 구체적 정보를 반드시 활용해야 함
+   - 숫자, 통계, 기업명, 제품명, 지역명, 시기 등 구체적 사실을 빠짐없이 포함
+   - 예: "58억 5,000만 달러", "23억 1,000만 달러", "Hilti", "Nuron 배터리 플랫폼", "다이아몬드 코어 드릴" 등
+   - 뉴스 기사에 언급된 모든 숫자, 이름, 제품명을 대본에 반드시 포함
+
+3. **추상적 요약 금지:**
+   - 뉴스 기사에 언급된 내용을 추상적으로 요약하지 말고, 구체적 사실을 그대로 제시한 후 해석
+   - "기업이 똑똑해졌다", "시장이 변했다" 같은 추상적 설명만으로는 부족함
+   - 반드시 뉴스 기사에 나온 구체적 사실을 먼저 제시하고, 그 다음에 해석과 맥락을 덧붙임
+
+4. **사실 우선 원칙:**
+   - 맥락 설명은 구체적 사실 위에 쌓아올리는 방식으로 작성
+   - 사실 없이 맥락만 설명하는 것은 절대 금지
+   - 뉴스 기사에 나온 정보만으로는 부족하다고 판단되더라도, 기사에 나온 내용을 최대한 활용하여 구체성을 확보
+
+5. **검증 방법:**
+   - 대본을 작성한 후, 뉴스 기사에 나온 모든 주요 정보(숫자, 이름, 제품명 등)가 대본에 포함되었는지 확인
+   - 빠진 정보가 있다면 반드시 추가
+
+────────────────
+
+[채널 컨셉]
+
+채널 목적: 복잡한 뉴스와 이슈를 3분 안에 해석해 시청자의 생각과 감정을 동시에 정리해주는 채널
+
+채널 말투: 차분하고 분석적이되, '멀리서 설명하는 전문가'가 아니라 '옆에서 같이 생각해주는 사람'의 시점을 유지한다.
+
+감정 사용 원칙:
+- 감정을 자극하지 않는다
+- 감정을 부정하지도 않는다
+- "그렇게 느꼈다면 자연스럽다"는 태도를 유지한다
+
+음성 전제: 여자 AI 음성, 약간 빠른 속도 → 문장은 짧고, 호흡은 자주 끊는다
+
+────────────────
+
+[주요 변경사항 (v{version})]
+- 중간 궁금증 트리거 규칙 추가: 본문 초반 핵심 설명 직후 필수 1회 삽입 (30~40% 지점 이탈 방지)
+- 앵커 문장, 비유, 긴장 유지 문장을 "필수"에서 "참고용"으로 변경
+- 고정된 문구 사용을 피하고 뉴스 내용에 맞는 자연스러운 전환 사용
+- 모든 문장을 다 사용할 필요 없음. 뉴스 내용에 맞게 자연스럽게 선택
+
+**금지 사항 (매우 중요 - 반드시 준수):**
+- 아래 문구들은 예시일 뿐이며, 실제 대본에서 반복적으로 사용하지 말 것:
+  * "그런데 여기서 대부분이 놓치는 지점이 있습니다"
+  * "이 부분을 놓치면 해석이 달라집니다" / "이 부분을 놓치면 이해가 달라집니다"
+  * "시간 관점에서 보면" / "개인 관점에서 보면" / "구조 관점에서 보면" (기사 해석 대본에서는 사용 금지)
+  * "사실부터 정리해보겠습니다"
+- 이런 고정된 문구를 사용하면 대본이 복불처럼 들립니다. 뉴스 내용에 맞는 자연스러운 문구를 직접 만들어 사용하세요.
+
+**중간 궁금증 트리거 구간에서 절대 사용 금지:**
+- "여기서 핵심은"
+- "정리하면"
+- "결론적으로"
+- "이게 중요한 이유는"
+- 위 표현들은 시청자에게 '이제 이해 끝' 신호를 주므로 금지한다.
+
+────────────────
+
+[영상 구조 및 작성 규칙]
+1. 오프닝 훅 (감정 진입 구간)
+- 질문 또는 관점 제시로 시작
+- 정보보다 감정이 먼저 등장해야 한다
+- 2문장 이내
+- 두 문장 중:
+  1문장은 시청자의 실제 감정 상태를 건드릴 것
+  1문장은 이 영상에서 무엇이 정리될지 암시할 것
+- 감정 단어는 1개만 사용, 과장 금지
+- 목적: 시청자가 "이거 내 얘긴데" 하고 멈추게 만드는 것
+2. 본문 – 핵심 설명 (사실 → 원인 → 구조 → 맥락)
+
+**구체적 내용 작성 원칙 (매우 중요):**
+- 뉴스 기사에 나온 구체적인 숫자, 데이터, 사례를 반드시 포함해야 함
+- 예: "58억 5,000만 달러", "Nuron 배터리 플랫폼", "다이아몬드 코어 드릴, 절단기, 레이저 측정기" 등
+- 추상적 설명("기업이 똑똑해졌다", "시장이 변했다")만으로는 부족함
+- 구체적 사실을 먼저 제시하고, 그 다음에 해석과 맥락을 덧붙이는 순서
+- 뉴스 기사에 언급된 실제 사례, 기업명, 제품명, 숫자 등을 활용하여 구체성을 확보
+- 맥락 설명은 구체적 사실 위에 쌓아올리는 방식으로 작성
+
+(1) 감정 장면 삽입 규칙
+- 본문 초반 1~2문단에는 '사람이 흔들리는 장면' 1개를 반드시 포함
+- 이 인물은:
+  - 판단하거나 결론을 내리지 않는다
+  - 대신 망설이거나, 헷갈리거나, 불편해한다
+  - 일상적 상황 / 짧은 내적 독백 1줄 허용
+- 목적: 시청자를 '관찰자'가 아니라 '당사자'로 만든다
+
+────────────────
+
+(2) 설명 전환 규칙
+- 설명은 자연스러운 흐름을 따른다 (느낌 → 질문 → 구조 설명 순서를 참고하되, 뉴스 내용에 맞게 유연하게 구성)
+- 설명이 너무 빨리 나오면 안 된다
+- ※ "사실부터 정리해보겠습니다" 같은 고정된 시작 문구는 피하고, 뉴스 내용에 맞는 자연스러운 전환 사용
+
+────────────────
+
+(2-1) 중간 궁금증 트리거 규칙 (필수 1회)
+- 본문 초반의 핵심 설명이 끝난 직후, 반드시 1회 삽입
+- 이 문장은:
+  - 새로운 정보를 제공하지 않는다
+  - 결론이나 평가를 제시하지 않는다
+  - 다음 내용을 직접적으로 예고하지 않는다
+  - 대신 "지금까지의 이해가 충분하지 않다"는 감각만 만들어야 한다
+- 단독 줄로 배치하며, 앞뒤 설명과 바로 연결하지 않는다
+
+역할 정의:
+이 문장은 흥미 유발이 아니라
+시청자가 스스로 판단을 멈추게 만드는 인지적 미완성 상태를 만드는 장치다.
+
+문장 톤 가이드 (예시 방향, 그대로 사용 금지):
+- "여기까지 들으면 다 이해한 것 같죠. 그런데 아직 중요한 얘기는 나오지 않았습니다."
+- "이쯤에서 고개를 끄덕이게 됩니다. 그래서 다음 얘기가 필요해집니다."
+- "지금 이 설명, 맞는 말처럼 들립니다. 문제는 그 다음입니다."
+- "여기서 멈추면, 이 뉴스는 평범해집니다."
+
+※ 실제 대본에서는 뉴스 내용에 맞게 새로운 문장을 직접 생성할 것
+※ 동일 문구 반복 사용 금지
+
+────────────────
+
+(3) 앵커 문장 규칙 (참고용 - 필수 아님)
+- **중요: 아래 문장들은 예시일 뿐이며, 반드시 사용할 필요가 없습니다.**
+- 뉴스 내용과 흐름에 자연스럽게 맞을 때만 선택적으로 사용하세요.
+- 모든 문장을 다 사용하거나, 특정 문장을 반드시 포함시킬 필요는 전혀 없습니다.
+- 가능한 문장 유형 (참고용 예시):
+  - "여기서 핵심은 이겁니다."
+  - "이걸 한 문장으로 정리하면"
+  - "이 지점에서 뉴스의 성격이 달라집니다."
+  - "솔직히, 여기서 마음이 갈립니다."
+  - "여기서 많은 사람이 멈칫합니다."
+- **금지: "이 부분을 놓치면 해석이 달라집니다" / "이 부분을 놓치면 이해가 달라집니다" 같은 문구는 사용하지 말 것 (너무 자주 사용되어 복불처럼 들림)**
+- ※ 뉴스 내용에 맞는 자연스러운 전환 문구를 직접 만들어 사용하는 것을 권장합니다
+- ※ 동일 문장 중복 사용 금지
+
+────────────────
+
+(4) 비유/은유 규칙 (선택적 활용)
+- 본문 중간에 설명이 필요할 때만 비유 사용 (필수 아님)
+- 설명을 돕는 용도만 허용
+- 감정 과잉, 문학적 표현 금지
+- 1~2문장 이내
+- 비유가 자연스럽지 않으면 사용하지 않아도 됨
+3. 긴장 유지 문장 (의식적 멈춤 구간 - 참고용, 필수 아님)
+- **중요: 아래 문장들은 예시일 뿐이며, 반드시 사용할 필요가 없습니다.**
+- 본문 흐름상 자연스럽게 필요할 때만 선택적으로 사용하세요.
+- 앞뒤 문단과 리듬 차이를 만들 때 활용 (단독 줄 권장)
+- 가능한 문장 유형 (참고용 예시):
+  - "이 뉴스는 여기서부터 다르게 봐야 합니다."
+  - "이 부분이 앞으로 더 중요해질 수 있습니다."
+- **금지: "그런데 여기서 대부분이 놓치는 지점이 있습니다" 같은 문구는 사용하지 말 것 (너무 자주 사용되어 복불처럼 들림)**
+- ※ 뉴스 내용에 맞는 자연스러운 전환 문구를 직접 만들어 사용하는 것을 권장합니다
+- 목적: 시청자의 사고를 잠시 멈추게 하기 (필요시에만, 자연스러울 때만)
+4. 인사이트 요약 (잔상 구간)
+- **중요: 본문에서 이미 설명한 사실이나 내용을 단순히 반복하지 말 것**
+- 본문과 구분되는 새로운 관점, 의미, 또는 앞으로의 방향을 제시해야 함
+- 단순 결론 금지
+- '정리'보다 방향 제시
+- 이 구간은 문장 길이를 더 짧게 작성
+- 설명보다 단정한 문장 사용
+  - 이 구간에는 **감정 정리 1문장**을 포함한다. (예: "그래서 우리가 느끼는 불안은 개인 탓이 아니라 구조의 신호다." 같은 톤)
+5. 마무리 (반복 인식 강화)
+- 질문형으로 끝낼 것
+- 이 이슈가 개별 사건이 아니라 반복되는 구조임을 암시
+- 구독·좋아요는 정보 제공의 수단으로 자연스럽게 연결
+- 구독·좋아요 문장이 영상의 마지막 문장
+- 이후 어떤 멘트도 추가하지 말 것
+────────────────
+
+[출력 요구사항]
+
+유튜브 영상 제목:
+- 30~40자
+- 정보 나열 금지
+- 기사 헤드라인 톤 금지
+- 질문형 문장
+- 물음표 사용 금지 (문장 자체로 의문형)
+- **제목 끝에 항상 마침표(.)를 추가할 것**
+
+전체 분량:
+- 약 1600자
+- 자연스러운 구어체
+- 시간·초 단위 표현 금지
+
+오프닝 훅: 45~60자
+본문: 약 1300자
+인사이트 요약: 75~90자
+마무리: 60~80자
+
+────────────────
+
+한 줄 요약: 이 프롬프트의 목표는 '이해시켰다'가 아니라 '나도 모르게 고개가 끄덕여졌다'다.
+
+**최종 목표:**
+이 프롬프트의 목적은 정보 전달 속도를 높이는 것이 아니라, 시청자가 스스로 '아직 판단하면 안 된다'고 느끼게 만드는 구조를 고정하는 것이다. 특히 30~40% 지점에서 이탈하지 않고 끝까지 보도록 만드는 구조적 장치를 포함한다.`;
+  };
+
+  // 프롬프트 템플릿 불러오기 및 자동 업데이트
   const loadPromptTemplates = async () => {
     try {
       // 기사 해석 대본 템플릿
@@ -102,10 +339,126 @@ export default function ScriptGenerationPage() {
       if (newsResponse.ok) {
         const newsData = await newsResponse.json();
         if (newsData.success && newsData.template) {
-          setNewsScriptTemplate(newsData.template.content);
-          // DB에서 불러온 버전 정보 저장
-          if (newsData.template.version) {
-            setNewsScriptVersion(newsData.template.version);
+          const latestTemplate = getLatestNewsScriptTemplate();
+          
+          // DB 템플릿이 최신 버전이 아니거나 필수 섹션이 없으면 업데이트
+          const hasRequiredSections = 
+            newsData.template.content.includes("뉴스 기사 정보 활용 원칙") &&
+            newsData.template.content.includes("구체적 내용 작성 원칙") &&
+            newsData.template.content.includes("반드시 아래 [뉴스 기사 정보] 섹션의 내용을 먼저 읽고");
+          
+          const needsUpdate = 
+            newsData.template.version !== NEWS_SCRIPT_PROMPT_VERSION ||
+            !hasRequiredSections;
+          
+          // 필수 섹션이 없으면 무조건 업데이트
+          if (!hasRequiredSections) {
+            console.log("[Template Update] 필수 섹션이 없어 템플릿을 업데이트합니다.");
+          }
+          
+          if (needsUpdate) {
+            // DB 템플릿 업데이트
+            try {
+              const updateResponse = await fetch("/api/prompt-templates", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  templateId: newsData.template.templateId,
+                  templateType: "news_script",
+                  version: NEWS_SCRIPT_PROMPT_VERSION,
+                  content: latestTemplate,
+                  isActive: true,
+                }),
+              });
+              
+              if (updateResponse.ok) {
+                console.log("[Template Update] 뉴스 스크립트 템플릿이 최신 버전으로 업데이트되었습니다.");
+                setNewsScriptTemplate(latestTemplate);
+                setNewsScriptVersion(NEWS_SCRIPT_PROMPT_VERSION);
+              } else {
+                const errorText = await updateResponse.text();
+                console.error("[Template Update] 템플릿 업데이트 실패:", errorText);
+                // 업데이트 실패해도 최신 템플릿을 사용 (DB는 나중에 업데이트됨)
+                console.log("[Template Update] 최신 템플릿을 메모리에 로드합니다.");
+                setNewsScriptTemplate(latestTemplate);
+                setNewsScriptVersion(NEWS_SCRIPT_PROMPT_VERSION);
+              }
+            } catch (updateError) {
+              console.warn("템플릿 업데이트 중 오류:", updateError);
+              setNewsScriptTemplate(newsData.template.content);
+              setNewsScriptVersion(newsData.template.version || NEWS_SCRIPT_PROMPT_VERSION);
+            }
+          } else {
+            // 최신 템플릿이지만 필수 섹션이 없으면 강제 업데이트
+            const hasRequiredSections = 
+              newsData.template.content.includes("뉴스 기사 정보 활용 원칙") &&
+              newsData.template.content.includes("구체적 내용 작성 원칙") &&
+              newsData.template.content.includes("반드시 아래 [뉴스 기사 정보] 섹션의 내용을 먼저 읽고");
+            
+            if (!hasRequiredSections) {
+              console.log("[Template Update] 템플릿에 필수 섹션이 없어 강제 업데이트합니다.");
+              // 강제 업데이트
+              try {
+                const updateResponse = await fetch("/api/prompt-templates", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    templateId: newsData.template.templateId,
+                    templateType: "news_script",
+                    version: NEWS_SCRIPT_PROMPT_VERSION,
+                    content: latestTemplate,
+                    isActive: true,
+                  }),
+                });
+                
+                if (updateResponse.ok) {
+                  console.log("[Template Update] 템플릿이 강제 업데이트되었습니다.");
+                  setNewsScriptTemplate(latestTemplate);
+                  setNewsScriptVersion(NEWS_SCRIPT_PROMPT_VERSION);
+                } else {
+                  const errorText = await updateResponse.text();
+                  console.error("[Template Update] 템플릿 강제 업데이트 실패:", errorText);
+                  // 업데이트 실패해도 최신 템플릿을 사용
+                  console.log("[Template Update] 최신 템플릿을 메모리에 로드합니다.");
+                  setNewsScriptTemplate(latestTemplate);
+                  setNewsScriptVersion(NEWS_SCRIPT_PROMPT_VERSION);
+                }
+              } catch (updateError) {
+                console.error("[Template Update] 템플릿 강제 업데이트 중 오류:", updateError);
+                // 오류가 발생해도 최신 템플릿을 사용
+                setNewsScriptTemplate(latestTemplate);
+                setNewsScriptVersion(NEWS_SCRIPT_PROMPT_VERSION);
+              }
+            } else {
+              // 필수 섹션이 모두 있으면 DB 템플릿 사용
+              setNewsScriptTemplate(newsData.template.content);
+              if (newsData.template.version) {
+                setNewsScriptVersion(newsData.template.version);
+              }
+            }
+          }
+        } else {
+          // 템플릿이 없으면 최신 템플릿을 DB에 저장
+          const latestTemplate = getLatestNewsScriptTemplate();
+          try {
+            const createResponse = await fetch("/api/prompt-templates", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                templateType: "news_script",
+                version: NEWS_SCRIPT_PROMPT_VERSION,
+                content: latestTemplate,
+                isActive: true,
+              }),
+            });
+            
+            if (createResponse.ok) {
+              console.log("뉴스 스크립트 템플릿이 생성되었습니다.");
+              setNewsScriptTemplate(latestTemplate);
+              setNewsScriptVersion(NEWS_SCRIPT_PROMPT_VERSION);
+            }
+          } catch (createError) {
+            console.warn("템플릿 생성 실패:", createError);
           }
         }
       }
@@ -407,34 +760,63 @@ export default function ScriptGenerationPage() {
     return result;
   };
 
-  const handleGenerateScript = () => {
+  const handleGenerateScript = async () => {
     if (selectedNews.length === 0) {
       alert("대본을 만들 뉴스를 최소 1개 이상 선택해주세요.");
       return;
     }
 
     setIsGenerating(true);
+    setError(null);
+    setGeneratedScript(""); // 이전 대본 초기화
     // 지식 주제 초기화 (뉴스 해설 모드로 전환)
     setKnowledgeTopic("");
 
     // 첫 번째 선택한 뉴스 사용 (하나만)
     const news = selectedNews[0];
 
+    // 뉴스 기사 전체 본문 가져오기 시도
+    let fullContent = news.description; // 기본값은 description
+    let contentSource = "description"; // 본문 출처 추적
+    try {
+      const newsUrl = news.originallink || news.link;
+      if (newsUrl) {
+        const contentResponse = await fetch(`/api/naver/news-content?url=${encodeURIComponent(newsUrl)}`);
+        if (contentResponse.ok) {
+          const contentData = await contentResponse.json();
+          if (contentData.content && contentData.content.length > 0) {
+            fullContent = contentData.content;
+            contentSource = "full_article";
+            console.log("[Script Generation] Full article content fetched, length:", fullContent.length);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[Script Generation] Failed to fetch full content, using description:", err);
+      // 본문 가져오기 실패 시 description 사용
+    }
+    
+    // 전체 본문 길이 저장 (확인용)
+    setFullContentLength(fullContent.length);
+
     // DB에서 템플릿을 불러왔으면 사용, 없으면 기본 템플릿 사용
     let prompt: string;
+    const versionToUse = newsScriptVersion || NEWS_SCRIPT_PROMPT_VERSION; // DB 버전 우선, 없으면 상수 사용
     if (newsScriptTemplate) {
       prompt = replaceTemplatePlaceholders(newsScriptTemplate, {
-        version: newsScriptVersion, // DB에서 불러온 버전 사용
+        version: versionToUse, // DB에서 불러온 버전 사용
         newsTitle: news.title,
-        newsDescription: news.description,
+        newsDescription: fullContent, // 전체 본문 사용
       });
     } else {
-      // 기본 템플릿 (fallback)
-      prompt = `앤디리스트 3분 기사 해석 프롬프트 (v${NEWS_SCRIPT_PROMPT_VERSION})
+      // 기본 템플릿 (fallback) - DB 버전 사용
+      prompt = `앤디리스트 3분 기사 해석 프롬프트 (v${versionToUse})
 감정 진입 강화형 - 유연한 구조 적용
 너는 유튜브 뉴스 해석 콘텐츠를 전문으로 하는 대본 작성 전문가다. 너의 역할은 뉴스를 요약하는 것이 아니라, 시청자가 "아, 그래서 내가 이런 느낌을 받았구나", **"그래서 이런 뉴스가 반복되는구나"**라고 감정과 사고가 함께 정리되도록 돕는 것이다.
 
 아래 뉴스 기사를 바탕으로 시청자의 관심을 끌고, 비구독자도 끝까지 보게 만드는 3분 분량의 유튜브 영상 대본과 제목을 작성하라.
+
+**중요: 반드시 아래 [뉴스 기사 정보] 섹션의 내용을 먼저 읽고, 그 내용을 기반으로 대본을 작성해야 한다. 뉴스 기사 정보를 읽지 않고 일반적인 설명만 하는 것은 절대 금지다.**
 
 ────────────────
 
@@ -454,7 +836,33 @@ export default function ScriptGenerationPage() {
 
 [뉴스 기사 정보]
 - 제목: ${news.title}
-- 내용: ${news.description}
+- 내용: ${fullContent}
+
+**뉴스 기사 정보 활용 원칙 (매우 중요 - 반드시 준수):**
+
+1. **뉴스 기사 내용을 먼저 읽어야 함:**
+   - 위 뉴스 기사 제목과 내용을 반드시 먼저 읽고 이해한 후 대본 작성
+   - 뉴스 기사 정보를 읽지 않고 일반적인 설명만 하는 것은 절대 금지
+
+2. **구체적 정보 반드시 포함:**
+   - 뉴스 기사에 나온 모든 구체적 정보를 반드시 활용해야 함
+   - 숫자, 통계, 기업명, 제품명, 지역명, 시기 등 구체적 사실을 빠짐없이 포함
+   - 예: "58억 5,000만 달러", "23억 1,000만 달러", "Hilti", "Nuron 배터리 플랫폼", "다이아몬드 코어 드릴" 등
+   - 뉴스 기사에 언급된 모든 숫자, 이름, 제품명을 대본에 반드시 포함
+
+3. **추상적 요약 금지:**
+   - 뉴스 기사에 언급된 내용을 추상적으로 요약하지 말고, 구체적 사실을 그대로 제시한 후 해석
+   - "기업이 똑똑해졌다", "시장이 변했다" 같은 추상적 설명만으로는 부족함
+   - 반드시 뉴스 기사에 나온 구체적 사실을 먼저 제시하고, 그 다음에 해석과 맥락을 덧붙임
+
+4. **사실 우선 원칙:**
+   - 맥락 설명은 구체적 사실 위에 쌓아올리는 방식으로 작성
+   - 사실 없이 맥락만 설명하는 것은 절대 금지
+   - 뉴스 기사에 나온 정보만으로는 부족하다고 판단되더라도, 기사에 나온 내용을 최대한 활용하여 구체성을 확보
+
+5. **검증 방법:**
+   - 대본을 작성한 후, 뉴스 기사에 나온 모든 주요 정보(숫자, 이름, 제품명 등)가 대본에 포함되었는지 확인
+   - 빠진 정보가 있다면 반드시 추가
 
 ────────────────
 
@@ -473,7 +881,7 @@ export default function ScriptGenerationPage() {
 
 ────────────────
 
-[주요 변경사항 (v${NEWS_SCRIPT_PROMPT_VERSION})]
+[주요 변경사항 (v${versionToUse})]
 - 중간 궁금증 트리거 규칙 추가: 본문 초반 핵심 설명 직후 필수 1회 삽입 (30~40% 지점 이탈 방지)
 - 앵커 문장, 비유, 긴장 유지 문장을 "필수"에서 "참고용"으로 변경
 - 고정된 문구 사용을 피하고 뉴스 내용에 맞는 자연스러운 전환 사용
@@ -507,6 +915,14 @@ export default function ScriptGenerationPage() {
 - 감정 단어는 1개만 사용, 과장 금지
 - 목적: 시청자가 "이거 내 얘긴데" 하고 멈추게 만드는 것
 2. 본문 – 핵심 설명 (사실 → 원인 → 구조 → 맥락)
+
+**구체적 내용 작성 원칙 (매우 중요):**
+- 뉴스 기사에 나온 구체적인 숫자, 데이터, 사례를 반드시 포함해야 함
+- 예: "58억 5,000만 달러", "Nuron 배터리 플랫폼", "다이아몬드 코어 드릴, 절단기, 레이저 측정기" 등
+- 추상적 설명("기업이 똑똑해졌다", "시장이 변했다")만으로는 부족함
+- 구체적 사실을 먼저 제시하고, 그 다음에 해석과 맥락을 덧붙이는 순서
+- 뉴스 기사에 언급된 실제 사례, 기업명, 제품명, 숫자 등을 활용하여 구체성을 확보
+- 맥락 설명은 구체적 사실 위에 쌓아올리는 방식으로 작성
 
 (1) 감정 장면 삽입 규칙
 - 본문 초반 1~2문단에는 '사람이 흔들리는 장면' 1개를 반드시 포함
@@ -626,9 +1042,43 @@ export default function ScriptGenerationPage() {
 `;
     }
 
-    setGeneratedPrompt(sanitizeGeneratedPrompt(prompt));
-    setCopied(false);
-    setIsGenerating(false);
+    // 프롬프트 저장 (참고용 및 확인용)
+    const sanitizedPrompt = sanitizeGeneratedPrompt(prompt);
+    setGeneratedPrompt(sanitizedPrompt);
+    setUsedPrompt(sanitizedPrompt); // 대본 생성에 사용된 프롬프트 저장
+
+    // AI API를 호출하여 실제 대본 생성
+    try {
+      console.log("[Script Generation] Calling AI API to generate script...");
+      console.log("[Script Generation] Content source:", contentSource, "Length:", fullContent.length);
+      const response = await fetch("/api/ai/generate-script", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "대본 생성 중 오류가 발생했습니다.");
+      }
+
+      const data = await response.json();
+      if (data.success && data.script) {
+        console.log("[Script Generation] Script generated successfully, length:", data.script.length);
+        setGeneratedScript(data.script);
+      } else {
+        throw new Error("대본 생성에 실패했습니다.");
+      }
+    } catch (err: any) {
+      console.error("[Script Generation] Error generating script:", err);
+      setError(err.message || "대본 생성 중 오류가 발생했습니다.");
+      // 오류가 발생해도 프롬프트는 표시
+    } finally {
+      setCopied(false);
+      setIsGenerating(false);
+    }
   };
 
   const handleCopyPrompt = async () => {
@@ -1208,11 +1658,63 @@ ${processedTopic}
                 className="primary-button"
                 disabled={isGenerating}
               >
-                {isGenerating ? "생성 중..." : "기사 해석 대본 프롬프트 생성"}
+                {isGenerating ? "대본 생성 중..." : "기사 해석 대본 생성"}
               </button>
             </div>
 
-            {generatedPrompt && selectedNews.length > 0 && (
+            {generatedScript && selectedNews.length > 0 && (
+              <div className="prompt-result">
+                <div className="result-header">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <h3 style={{ margin: 0 }}>생성된 대본</h3>
+                    <span className="version-badge" style={{ fontSize: '0.85em', color: '#666' }}>
+                      (템플릿 버전: v{newsScriptVersion})
+                    </span>
+                    <span className="version-badge" style={{ fontSize: '0.85em', color: '#666' }}>
+                      (본문 길이: {fullContentLength.toLocaleString()}자)
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={() => setShowUsedPrompt(!showUsedPrompt)}
+                      className="copy-button"
+                      style={{ fontSize: '0.9em', padding: '6px 12px' }}
+                    >
+                      {showUsedPrompt ? "📄 프롬프트 숨기기" : "📄 사용된 프롬프트 보기"}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(generatedScript);
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
+                        } catch (err) {
+                          console.error("복사 실패:", err);
+                        }
+                      }}
+                      className="copy-button"
+                    >
+                      {copied ? "✓ 복사됨" : "📋 복사"}
+                    </button>
+                  </div>
+                </div>
+                {showUsedPrompt && usedPrompt && (
+                  <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '4px', border: '1px solid #ddd' }}>
+                    <div style={{ marginBottom: '8px', fontWeight: 'bold', fontSize: '0.9em', color: '#666' }}>
+                      📋 대본 생성에 사용된 프롬프트 (전체 기사 본문 포함)
+                    </div>
+                    <div className="prompt-content" style={{ maxHeight: '400px', overflow: 'auto' }}>
+                      <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: '0.85em' }}>{usedPrompt}</pre>
+                    </div>
+                  </div>
+                )}
+                <div className="prompt-content">
+                  <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{generatedScript}</pre>
+                </div>
+              </div>
+            )}
+            
+            {!generatedScript && generatedPrompt && selectedNews.length > 0 && (
               <div className="prompt-result">
                 <div className="result-header">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
