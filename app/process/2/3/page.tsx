@@ -82,6 +82,7 @@ export default function ScriptGenerationPage() {
   const [generatedScript, setGeneratedScript] = useState(""); // 실제 생성된 대본
   const [usedPrompt, setUsedPrompt] = useState(""); // 대본 생성에 사용된 프롬프트
   const [fullContentLength, setFullContentLength] = useState(0); // 가져온 전체 본문 길이
+  const [contentSource, setContentSource] = useState<"full_article" | "description">("description"); // 본문 출처
   const [showUsedPrompt, setShowUsedPrompt] = useState(false); // 사용된 프롬프트 표시 여부
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -314,12 +315,12 @@ export default function ScriptGenerationPage() {
 - **제목 끝에 항상 마침표(.)를 추가할 것**
 
 전체 분량:
-- 약 1600자
+- 약 1700자 이상 (빠른 속도로 읽을 것을 고려하여 충분한 분량 확보)
 - 자연스러운 구어체
 - 시간·초 단위 표현 금지
 
 오프닝 훅: 45~60자
-본문: 약 1300자
+본문: 약 1400자 이상
 인사이트 요약: 75~90자
 마무리: 60~80자
 
@@ -341,22 +342,24 @@ export default function ScriptGenerationPage() {
         if (newsData.success && newsData.template) {
           const latestTemplate = getLatestNewsScriptTemplate();
           
-          // DB 템플릿이 최신 버전이 아니거나 필수 섹션이 없으면 업데이트
-          const hasRequiredSections = 
-            newsData.template.content.includes("뉴스 기사 정보 활용 원칙") &&
-            newsData.template.content.includes("구체적 내용 작성 원칙") &&
-            newsData.template.content.includes("반드시 아래 [뉴스 기사 정보] 섹션의 내용을 먼저 읽고");
+          // 항상 최신 템플릿과 DB 템플릿 내용을 비교하여 다르면 업데이트
+          // (코드에서 프롬프트를 수정하면 자동으로 DB도 업데이트되도록)
+          const dbContent = newsData.template.content || "";
+          const latestContent = latestTemplate;
           
-          const needsUpdate = 
-            newsData.template.version !== NEWS_SCRIPT_PROMPT_VERSION ||
-            !hasRequiredSections;
+          // 내용이 다르면 업데이트 (버전도 자동으로 업데이트)
+          const contentChanged = dbContent !== latestContent;
           
-          // 필수 섹션이 없으면 무조건 업데이트
-          if (!hasRequiredSections) {
-            console.log("[Template Update] 필수 섹션이 없어 템플릿을 업데이트합니다.");
-          }
-          
-          if (needsUpdate) {
+          if (contentChanged) {
+            // 내용이 변경되었으므로 버전을 자동으로 업데이트
+            // 현재 날짜를 버전에 추가 (예: 3.3.20250121)
+            const today = new Date();
+            const dateStr = today.toISOString().split('T')[0].replace(/-/g, ''); // YYYYMMDD
+            const autoVersion = `${NEWS_SCRIPT_PROMPT_VERSION}.${dateStr}`;
+            
+            console.log("[Template Update] 템플릿 내용이 변경되어 DB를 자동 업데이트합니다.");
+            console.log("[Template Update] 버전이 자동으로 업데이트됩니다:", newsData.template.version, "→", autoVersion);
+            
             // DB 템플릿 업데이트
             try {
               const updateResponse = await fetch("/api/prompt-templates", {
@@ -365,97 +368,70 @@ export default function ScriptGenerationPage() {
                 body: JSON.stringify({
                   templateId: newsData.template.templateId,
                   templateType: "news_script",
-                  version: NEWS_SCRIPT_PROMPT_VERSION,
+                  version: autoVersion, // 자동 생성된 버전 사용
                   content: latestTemplate,
                   isActive: true,
                 }),
               });
               
               if (updateResponse.ok) {
-                console.log("[Template Update] 뉴스 스크립트 템플릿이 최신 버전으로 업데이트되었습니다.");
+                const today = new Date();
+                const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
+                const autoVersion = `${NEWS_SCRIPT_PROMPT_VERSION}.${dateStr}`;
+                console.log("[Template Update] ✅ 뉴스 스크립트 템플릿이 최신 버전으로 업데이트되었습니다.");
                 setNewsScriptTemplate(latestTemplate);
-                setNewsScriptVersion(NEWS_SCRIPT_PROMPT_VERSION);
+                setNewsScriptVersion(autoVersion); // 자동 생성된 버전 사용
               } else {
                 const errorText = await updateResponse.text();
-                console.error("[Template Update] 템플릿 업데이트 실패:", errorText);
+                console.error("[Template Update] ❌ 템플릿 업데이트 실패:", errorText);
                 // 업데이트 실패해도 최신 템플릿을 사용 (DB는 나중에 업데이트됨)
+                const today = new Date();
+                const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
+                const autoVersion = `${NEWS_SCRIPT_PROMPT_VERSION}.${dateStr}`;
                 console.log("[Template Update] 최신 템플릿을 메모리에 로드합니다.");
                 setNewsScriptTemplate(latestTemplate);
-                setNewsScriptVersion(NEWS_SCRIPT_PROMPT_VERSION);
+                setNewsScriptVersion(autoVersion);
               }
             } catch (updateError) {
-              console.warn("템플릿 업데이트 중 오류:", updateError);
-              setNewsScriptTemplate(newsData.template.content);
-              setNewsScriptVersion(newsData.template.version || NEWS_SCRIPT_PROMPT_VERSION);
+              console.error("[Template Update] ❌ 템플릿 업데이트 중 오류:", updateError);
+              // 오류가 발생해도 최신 템플릿을 사용
+              const today = new Date();
+              const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
+              const autoVersion = `${NEWS_SCRIPT_PROMPT_VERSION}.${dateStr}`;
+              setNewsScriptTemplate(latestTemplate);
+              setNewsScriptVersion(autoVersion);
             }
           } else {
-            // 최신 템플릿이지만 필수 섹션이 없으면 강제 업데이트
-            const hasRequiredSections = 
-              newsData.template.content.includes("뉴스 기사 정보 활용 원칙") &&
-              newsData.template.content.includes("구체적 내용 작성 원칙") &&
-              newsData.template.content.includes("반드시 아래 [뉴스 기사 정보] 섹션의 내용을 먼저 읽고");
-            
-            if (!hasRequiredSections) {
-              console.log("[Template Update] 템플릿에 필수 섹션이 없어 강제 업데이트합니다.");
-              // 강제 업데이트
-              try {
-                const updateResponse = await fetch("/api/prompt-templates", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    templateId: newsData.template.templateId,
-                    templateType: "news_script",
-                    version: NEWS_SCRIPT_PROMPT_VERSION,
-                    content: latestTemplate,
-                    isActive: true,
-                  }),
-                });
-                
-                if (updateResponse.ok) {
-                  console.log("[Template Update] 템플릿이 강제 업데이트되었습니다.");
-                  setNewsScriptTemplate(latestTemplate);
-                  setNewsScriptVersion(NEWS_SCRIPT_PROMPT_VERSION);
-                } else {
-                  const errorText = await updateResponse.text();
-                  console.error("[Template Update] 템플릿 강제 업데이트 실패:", errorText);
-                  // 업데이트 실패해도 최신 템플릿을 사용
-                  console.log("[Template Update] 최신 템플릿을 메모리에 로드합니다.");
-                  setNewsScriptTemplate(latestTemplate);
-                  setNewsScriptVersion(NEWS_SCRIPT_PROMPT_VERSION);
-                }
-              } catch (updateError) {
-                console.error("[Template Update] 템플릿 강제 업데이트 중 오류:", updateError);
-                // 오류가 발생해도 최신 템플릿을 사용
-                setNewsScriptTemplate(latestTemplate);
-                setNewsScriptVersion(NEWS_SCRIPT_PROMPT_VERSION);
-              }
-            } else {
-              // 필수 섹션이 모두 있으면 DB 템플릿 사용
-              setNewsScriptTemplate(newsData.template.content);
-              if (newsData.template.version) {
-                setNewsScriptVersion(newsData.template.version);
-              }
+            // 내용이 동일하면 DB 템플릿 사용
+            console.log("[Template Update] 템플릿이 최신 상태입니다.");
+            setNewsScriptTemplate(newsData.template.content);
+            if (newsData.template.version) {
+              setNewsScriptVersion(newsData.template.version);
             }
           }
         } else {
           // 템플릿이 없으면 최신 템플릿을 DB에 저장
           const latestTemplate = getLatestNewsScriptTemplate();
+          const today = new Date();
+          const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
+          const autoVersion = `${NEWS_SCRIPT_PROMPT_VERSION}.${dateStr}`;
+          
           try {
             const createResponse = await fetch("/api/prompt-templates", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 templateType: "news_script",
-                version: NEWS_SCRIPT_PROMPT_VERSION,
+                version: autoVersion, // 날짜 기반 버전 사용
                 content: latestTemplate,
                 isActive: true,
               }),
             });
             
             if (createResponse.ok) {
-              console.log("뉴스 스크립트 템플릿이 생성되었습니다.");
+              console.log("[Template Update] 뉴스 스크립트 템플릿이 생성되었습니다. 버전:", autoVersion);
               setNewsScriptTemplate(latestTemplate);
-              setNewsScriptVersion(NEWS_SCRIPT_PROMPT_VERSION);
+              setNewsScriptVersion(autoVersion);
             }
           } catch (createError) {
             console.warn("템플릿 생성 실패:", createError);
@@ -777,27 +753,36 @@ export default function ScriptGenerationPage() {
 
     // 뉴스 기사 전체 본문 가져오기 시도
     let fullContent = news.description; // 기본값은 description
-    let contentSource = "description"; // 본문 출처 추적
+    let contentSourceType: "full_article" | "description" = "description"; // 본문 출처 추적
     try {
       const newsUrl = news.originallink || news.link;
       if (newsUrl) {
+        console.log("[Script Generation] Attempting to fetch full article from:", newsUrl);
         const contentResponse = await fetch(`/api/naver/news-content?url=${encodeURIComponent(newsUrl)}`);
         if (contentResponse.ok) {
           const contentData = await contentResponse.json();
-          if (contentData.content && contentData.content.length > 0) {
+          if (contentData.content && contentData.content.length > 100) {
             fullContent = contentData.content;
-            contentSource = "full_article";
-            console.log("[Script Generation] Full article content fetched, length:", fullContent.length);
+            contentSourceType = "full_article";
+            console.log("[Script Generation] ✅ Full article content fetched, length:", fullContent.length);
+          } else {
+            console.warn("[Script Generation] ⚠️ Content extraction failed or too short, using description");
+            if (contentData.error) {
+              console.warn("[Script Generation] Extraction error:", contentData.error);
+            }
           }
+        } else {
+          console.warn("[Script Generation] ⚠️ Content API request failed, using description");
         }
       }
     } catch (err) {
-      console.warn("[Script Generation] Failed to fetch full content, using description:", err);
+      console.warn("[Script Generation] ⚠️ Failed to fetch full content, using description:", err);
       // 본문 가져오기 실패 시 description 사용
     }
     
-    // 전체 본문 길이 저장 (확인용)
+    // 전체 본문 길이 및 출처 저장 (확인용)
     setFullContentLength(fullContent.length);
+    setContentSource(contentSourceType);
 
     // DB에서 템플릿을 불러왔으면 사용, 없으면 기본 템플릿 사용
     let prompt: string;
@@ -1024,12 +1009,12 @@ export default function ScriptGenerationPage() {
 - **제목 끝에 항상 마침표(.)를 추가할 것**
 
 전체 분량:
-- 약 1600자
+- 약 1700자 이상 (빠른 속도로 읽을 것을 고려하여 충분한 분량 확보)
 - 자연스러운 구어체
 - 시간·초 단위 표현 금지
 
 오프닝 훅: 45~60자
-본문: 약 1300자
+본문: 약 1400자 이상
 인사이트 요약: 75~90자
 마무리: 60~80자
 
@@ -1670,8 +1655,10 @@ ${processedTopic}
                     <span className="version-badge" style={{ fontSize: '0.85em', color: '#666' }}>
                       (템플릿 버전: v{newsScriptVersion})
                     </span>
-                    <span className="version-badge" style={{ fontSize: '0.85em', color: '#666' }}>
-                      (본문 길이: {fullContentLength.toLocaleString()}자)
+                    <span className="version-badge" style={{ fontSize: '0.85em', color: contentSource === 'full_article' ? '#28a745' : '#ffc107' }}>
+                      {contentSource === 'full_article' 
+                        ? `✅ 전체 기사 본문 (${fullContentLength.toLocaleString()}자)`
+                        : `⚠️ 요약본만 사용 (${fullContentLength.toLocaleString()}자)`}
                     </span>
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
