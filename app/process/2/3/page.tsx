@@ -671,8 +671,14 @@ export default function ScriptGenerationPage() {
     setError(null);
 
     try {
+      // 쉼표로 구분된 키워드를 AND 조건(공백)으로 변환
+      let processedInput = knowledgeTopic.trim();
+      if (processedInput.includes(",")) {
+        processedInput = processedInput.split(",").map(k => k.trim()).filter(k => k).join(" ");
+      }
+      
       // 사용자 입력 내용을 함께 전달
-      const userInput = knowledgeTopic.trim();
+      const userInput = processedInput;
       const timestamp = Date.now();
       
       // 사용자 입력이 있으면 함께 전달, 없으면 일반 추천
@@ -729,6 +735,12 @@ export default function ScriptGenerationPage() {
       return;
     }
 
+    // 쉼표로 구분된 키워드를 AND 조건(공백)으로 변환
+    let processedTopic = knowledgeTopic.trim();
+    if (processedTopic.includes(",")) {
+      processedTopic = processedTopic.split(",").map(k => k.trim()).filter(k => k).join(" ");
+    }
+
     setIsGenerating(true);
     // 뉴스 선택 상태 초기화 (지식 전달 모드로 전환)
     setSelectedNews([]);
@@ -739,7 +751,7 @@ export default function ScriptGenerationPage() {
     if (knowledgeScriptTemplate) {
       prompt = replaceTemplatePlaceholders(knowledgeScriptTemplate, {
         version: knowledgeScriptVersion, // DB에서 불러온 버전 사용
-        knowledgeTopic: knowledgeTopic.trim(),
+        knowledgeTopic: processedTopic,
       });
     } else {
       // 기본 템플릿 (fallback)
@@ -753,7 +765,7 @@ export default function ScriptGenerationPage() {
 ────────────────
 
 [주제]
-${knowledgeTopic.trim()}
+${processedTopic}
 
 ────────────────
 
@@ -1272,7 +1284,7 @@ ${knowledgeTopic.trim()}
               id="knowledge-topic"
               value={knowledgeTopic}
               onChange={(e) => setKnowledgeTopic(e.target.value)}
-              placeholder="예: 환율이 오르내리는 원인과 결과&#10;&#10;또는 여러 내용을 입력하세요:&#10;- 관심 있는 주제&#10;- 만들고 싶은 영상의 방향&#10;- 궁금한 점 등"
+              placeholder="예: 환율이 오르내리는 원인과 결과&#10;또는 여러 주제를 쉼표로 구분: 인도, 다이아몬드&#10;&#10;여러 내용을 입력할 수도 있습니다:&#10;- 관심 있는 주제&#10;- 만들고 싶은 영상의 방향&#10;- 궁금한 점 등"
               className="textarea-input"
               style={{ width: "100%", minHeight: "120px", fontSize: "1rem", lineHeight: "1.6" }}
               rows={5}
