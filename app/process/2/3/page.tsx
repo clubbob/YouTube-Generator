@@ -1069,7 +1069,9 @@ ${fullContent.length < 200 ? `**⚠️ 중요: 입력 본문이 짧습니다 (${
     // AI API를 호출하여 실제 대본 생성
     try {
       console.log("[Script Generation] Calling AI API to generate script...");
-      console.log("[Script Generation] Content source:", contentSource, "Length:", fullContent.length);
+      console.log("[Script Generation] Content source:", contentSourceType, "Length:", fullContent.length);
+      console.log("[Script Generation] Prompt length:", prompt.length);
+      
       const response = await fetch("/api/ai/generate-script", {
         method: "POST",
         headers: {
@@ -1078,22 +1080,42 @@ ${fullContent.length < 200 ? `**⚠️ 중요: 입력 본문이 짧습니다 (${
         body: JSON.stringify({ prompt }),
       });
 
+      console.log("[Script Generation] API Response status:", response.status);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "대본 생성 중 오류가 발생했습니다.");
+        let errorMessage = "대본 생성 중 오류가 발생했습니다.";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+          console.error("[Script Generation] API Error:", errorData);
+        } catch (parseError) {
+          const errorText = await response.text();
+          console.error("[Script Generation] API Error (text):", errorText);
+          errorMessage = `대본 생성 실패 (HTTP ${response.status}): ${errorText.substring(0, 200)}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
+      console.log("[Script Generation] API Response data:", { 
+        success: data.success, 
+        hasScript: !!data.script,
+        scriptLength: data.script?.length 
+      });
+      
       if (data.success && data.script) {
-        console.log("[Script Generation] Script generated successfully, length:", data.script.length);
+        console.log("[Script Generation] ✅ Script generated successfully, length:", data.script.length);
         setGeneratedScript(data.script);
+        setError(null); // 성공 시 에러 초기화
       } else {
-        throw new Error("대본 생성에 실패했습니다.");
+        console.error("[Script Generation] ❌ Invalid response format:", data);
+        throw new Error(data.error || "대본 생성에 실패했습니다. 응답 형식이 올바르지 않습니다.");
       }
     } catch (err: any) {
-      console.error("[Script Generation] Error generating script:", err);
-      setError(err.message || "대본 생성 중 오류가 발생했습니다.");
-      // 오류가 발생해도 프롬프트는 표시
+      console.error("[Script Generation] ❌ Error generating script:", err);
+      const errorMessage = err.message || "대본 생성 중 오류가 발생했습니다. OpenAI API 키가 설정되어 있는지 확인해주세요.";
+      setError(errorMessage);
+      // 오류가 발생해도 프롬프트는 표시 (사용자가 수동으로 사용 가능)
     } finally {
       setCopied(false);
       setIsGenerating(false);
@@ -1735,6 +1757,22 @@ ${processedTopic}
               </div>
             )}
             
+            {error && selectedNews.length > 0 && (
+              <div className="error-message" style={{ 
+                padding: '16px', 
+                backgroundColor: '#fff3cd', 
+                border: '1px solid #ffc107', 
+                borderRadius: '4px',
+                marginBottom: '16px'
+              }}>
+                <h4 style={{ margin: '0 0 8px 0', color: '#856404' }}>⚠️ 대본 생성 실패</h4>
+                <p style={{ margin: 0, color: '#856404' }}>{error}</p>
+                <p style={{ margin: '8px 0 0 0', fontSize: '0.9em', color: '#856404' }}>
+                  브라우저 콘솔(F12)에서 자세한 오류 로그를 확인할 수 있습니다.
+                </p>
+              </div>
+            )}
+            
             {!generatedScript && generatedPrompt && selectedNews.length > 0 && (
               <div className="prompt-result">
                 <div className="result-header">
@@ -1743,6 +1781,11 @@ ${processedTopic}
                     <span className="version-badge" style={{ fontSize: '0.85em', color: '#666' }}>
                       (템플릿 버전: v{newsScriptVersion})
                     </span>
+                    {error && (
+                      <span className="version-badge" style={{ fontSize: '0.85em', color: '#ffc107' }}>
+                        (대본 생성 실패 - 프롬프트만 표시)
+                      </span>
+                    )}
                   </div>
                   <button
                     onClick={handleCopyPrompt}
