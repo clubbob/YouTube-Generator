@@ -2,7 +2,7 @@ const { exec } = require('child_process');
 const util = require('util');
 const execPromise = util.promisify(exec);
 
-const ports = [3000, 3001, 3002];
+const ports = [3000, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010];
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));

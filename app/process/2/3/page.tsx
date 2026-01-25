@@ -165,6 +165,16 @@ export default function ScriptGenerationPage() {
 - 전개 순서: 사실 → 원인 → 구조 → 맥락
 - 설명형 나열이 아니라 '질문 → 답변' 흐름으로 작성
 - 한 문장은 최대 2줄을 넘지 않게 작성
+- **중요: 본문은 반드시 1700자 이상이어야 합니다. 4분 분량을 채우기 위해 충분한 내용이 필요합니다.**
+- **분량 확보를 위해:**
+  * 각 개념을 단순히 설명하지 말고, 왜 그런지, 어떻게 작동하는지, 어떤 영향을 미치는지 등을 자세히 설명
+  * 실제 사례를 구체적으로 제시 (예: "2023년 한국은행이 금리를 인상했을 때..." 같은 구체적 사례)
+  * 비교 설명 추가 (예: "A와 B의 차이는..." 같은 비교)
+  * 배경 지식이나 역사적 맥락 포함
+  * 숫자, 통계, 데이터를 구체적으로 제시
+  * 다양한 관점이나 측면을 다룸
+  * 각 주제를 깊이 있게 설명하여 분량을 채워야 함
+  * 단순히 요약만 하지 말고, 충분한 설명과 예시를 포함
 
 ────────────────
 
@@ -288,8 +298,11 @@ export default function ScriptGenerationPage() {
   * 질문형 또는 관점 제시형
 - 본문:
   * **최소 1700자 이상 필수** (전체 분량 2000자 이상을 달성하기 위해 필수)
-  * 예시·비유·사례 포함 (과도하지 않게)
-  * 구체적인 설명과 사례를 충분히 포함하여 분량을 확보해야 함
+  * **중요: 본문이 1700자 미만이면 절대 안 됩니다. 반드시 1700자 이상 작성하세요.**
+  * 예시·비유·사례를 충분히 포함하여 분량을 확보해야 함
+  * 각 개념에 대한 구체적인 설명, 실제 사례, 비교 설명 등을 추가하여 충분한 분량을 확보
+  * 단순히 요약만 하지 말고, 각 주제를 깊이 있게 설명하여 분량을 채워야 함
+  * 4분 분량(240초)을 채우기 위해서는 본문만으로도 최소 1700자 이상이 필수입니다
 - 인사이트 요약:
   * 3~4문장
   * 약 75~90자
@@ -299,10 +312,20 @@ export default function ScriptGenerationPage() {
   * 구독·좋아요 문구 포함
   * 구독·좋아요 문구가 **마지막 문장**이어야 함 (이후 추가 문장 금지)
 
-**분량 검증:**
+**분량 검증 (매우 중요 - 반드시 준수):**
 - 대본 작성 후 반드시 전체 글자 수를 확인하세요
-- 2000자 미만이면 추가 내용을 보강하여 반드시 2000자 이상으로 작성하세요
-- 본문이 1700자 미만이면 구체적인 설명, 사례, 예시를 추가하여 충분한 분량을 확보하세요
+- **전체 대본이 2000자 미만이면 절대 안 됩니다. 반드시 2000자 이상으로 작성하세요.**
+- **본문이 1700자 미만이면 절대 안 됩니다. 반드시 1700자 이상으로 작성하세요.**
+- 분량이 부족하면:
+  * 각 개념에 대한 더 자세한 설명 추가
+  * 실제 사례나 예시를 더 많이 포함
+  * 비교 설명이나 배경 지식 추가
+  * 구체적인 숫자, 데이터, 통계 포함
+  * 주제와 관련된 다양한 관점 제시
+  * 각 주제를 더 깊이 있게 설명
+- **4분 분량(240초)을 채우기 위해서는 최소 2000자 이상이 필수입니다.**
+- **대본이 짧으면 시청자가 영상을 끝까지 보지 않고 이탈합니다. 반드시 충분한 분량을 확보하세요.**
+- **현재 대본이 2000자 미만이면, 본문에 더 많은 설명, 사례, 예시를 추가하여 반드시 2000자 이상으로 작성하세요.**
 ────────────────
 
 한 줄 요약: 이 프롬프트의 목표는 '이해시켰다'가 아니라 '나도 모르게 고개가 끄덕여졌다'다.
@@ -679,13 +702,15 @@ export default function ScriptGenerationPage() {
           const dbNormalized = dbContent.replace(/\{version\}/g, KNOWLEDGE_SCRIPT_PROMPT_VERSION).replace(/\{knowledgeTopic\}/g, "TEST_TOPIC");
           
           const contentChanged = latestNormalized !== dbNormalized;
-          const versionMismatch = !dbVersion.startsWith(KNOWLEDGE_SCRIPT_PROMPT_VERSION);
           
           // 최신 템플릿에 필수 섹션이 있는지 확인
           const hasRequiredSections = latestKnowledgeTemplate.includes("최소 2000자 이상 필수") && 
                                      latestKnowledgeTemplate.includes("분량 검증");
           
-          if (contentChanged || versionMismatch || !hasRequiredSections) {
+          // 버전이 날짜 형식이 아니면 업데이트 필요 (예: "1.0" -> "1.0.YYYYMMDD")
+          const versionNeedsUpdate = !dbVersion.includes(".") || dbVersion.split(".").length < 3;
+          
+          if (contentChanged || versionNeedsUpdate || !hasRequiredSections) {
             // 템플릿 업데이트 필요
             const today = new Date();
             const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
@@ -728,14 +753,51 @@ export default function ScriptGenerationPage() {
               setKnowledgeScriptVersion(autoVersion);
             }
           } else {
-            // 내용이 동일하더라도 최신 템플릿과 버전 사용 (일관성 유지)
+            // 내용이 동일하더라도 항상 날짜 기반 버전 사용 (일관성 유지)
             const today = new Date();
             const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
             const autoVersion = `${KNOWLEDGE_SCRIPT_PROMPT_VERSION}.${dateStr}`;
             
-            console.log("[Template Update] 지식 전달 템플릿 내용이 최신 상태입니다. 버전:", autoVersion);
-            setKnowledgeScriptTemplate(latestKnowledgeTemplate);
-            setKnowledgeScriptVersion(autoVersion); // 항상 최신 버전 형식 사용
+            // 버전이 날짜 형식이 아니거나 오늘 날짜가 아니면 업데이트
+            const versionNeedsUpdate = !dbVersion.includes(".") || dbVersion.split(".").length < 3 || !dbVersion.match(/\d{8}$/) || dbVersion === "1.0" || dbVersion === KNOWLEDGE_SCRIPT_PROMPT_VERSION || !dbVersion.endsWith(dateStr);
+            
+            if (versionNeedsUpdate) {
+              console.log("[Template Update] 지식 전달 템플릿 버전 형식을 업데이트합니다:", autoVersion, "(현재 버전:", dbVersion, ")");
+              try {
+                const updateResponse = await fetch("/api/prompt-templates", {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    templateId: knowledgeData.template.templateId,
+                    templateType: "knowledge_script",
+                    version: autoVersion,
+                    content: latestKnowledgeTemplate,
+                    isActive: true,
+                  }),
+                });
+                
+                if (updateResponse.ok) {
+                  console.log("[Template Update] ✅ 지식 전달 스크립트 템플릿 버전이 업데이트되었습니다:", autoVersion);
+                  setKnowledgeScriptTemplate(latestKnowledgeTemplate);
+                  setKnowledgeScriptVersion(autoVersion);
+                } else {
+                  // 업데이트 실패해도 최신 버전 형식 사용
+                  console.log("[Template Update] DB 업데이트 실패했지만 최신 버전 형식을 사용합니다:", autoVersion);
+                  setKnowledgeScriptTemplate(latestKnowledgeTemplate);
+                  setKnowledgeScriptVersion(autoVersion);
+                }
+              } catch (updateError) {
+                console.warn("템플릿 버전 업데이트 실패:", updateError);
+                // 업데이트 실패해도 최신 버전 형식 사용
+                setKnowledgeScriptTemplate(latestKnowledgeTemplate);
+                setKnowledgeScriptVersion(autoVersion);
+              }
+            } else {
+              // 버전 형식이 올바르면 그대로 사용
+              console.log("[Template Update] 지식 전달 템플릿 내용이 최신 상태입니다. 버전:", dbVersion);
+              setKnowledgeScriptTemplate(latestKnowledgeTemplate);
+              setKnowledgeScriptVersion(dbVersion);
+            }
           }
         } else {
           // 템플릿이 없으면 최신 템플릿을 DB에 저장
@@ -1764,18 +1826,30 @@ ${processedTopic}
     setGeneratedPrompt(sanitizedPrompt);
     setKnowledgeUsedPrompt(sanitizedPrompt); // 지식 전달 대본 생성에 사용된 프롬프트 저장
 
+    // 지식 전달 대본용 추가 지시사항을 프롬프트에 추가
+    const enhancedPrompt = `${prompt}
+
+────────────────
+
+**최종 확인 사항 (반드시 준수):**
+- 전체 대본이 반드시 2000자 이상이어야 합니다. 2000자 미만이면 절대 안 됩니다.
+- 본문이 반드시 1700자 이상이어야 합니다. 1700자 미만이면 절대 안 됩니다.
+- 대본을 작성한 후 반드시 글자 수를 확인하고, 부족하면 더 많은 설명, 사례, 예시를 추가하세요.
+- 4분 분량(240초)을 채우기 위해서는 최소 2000자 이상이 필수입니다.
+- 현재 대본이 2000자 미만이면, 본문에 더 많은 내용을 추가하여 반드시 2000자 이상으로 작성하세요.`;
+
     // AI API를 호출하여 실제 대본 생성
     try {
       console.log("[Knowledge Script Generation] Calling AI API to generate script...");
       console.log("[Knowledge Script Generation] Topic:", processedTopic);
-      console.log("[Knowledge Script Generation] Prompt length:", prompt.length);
+      console.log("[Knowledge Script Generation] Prompt length:", enhancedPrompt.length);
       
       const response = await fetch("/api/ai/generate-script", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt: enhancedPrompt }),
       });
 
       console.log("[Knowledge Script Generation] API Response status:", response.status);

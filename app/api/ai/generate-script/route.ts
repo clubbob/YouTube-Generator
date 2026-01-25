@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
           },
         ],
         temperature: 0.7,
-        max_tokens: 4000,
+        max_tokens: 8000, // 한국어 대본 2000자 이상을 위해 토큰 수 증가
       }),
     });
 

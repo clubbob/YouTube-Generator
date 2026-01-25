@@ -44,7 +44,7 @@ function isPortInUse(port) {
   });
 }
 
-async function findAvailablePort(startPort = 3000, maxPort = 3010) {
+async function findAvailablePort(startPort = 3000, maxPort = 3100) {
   for (let port = startPort; port <= maxPort; port++) {
     const inUse = await isPortInUse(port);
     if (!inUse) {
@@ -56,7 +56,17 @@ async function findAvailablePort(startPort = 3000, maxPort = 3010) {
 
 async function main() {
   try {
-    const port = await findAvailablePort(3000, 3010);
+    const port = await findAvailablePort(3000, 3100);
+    
+    // Windows에서 UTF-8 인코딩 설정
+    if (process.platform === 'win32') {
+      // Windows 코드 페이지를 UTF-8로 변경
+      try {
+        require('child_process').execSync('chcp 65001 >nul 2>&1', { stdio: 'ignore' });
+      } catch (e) {
+        // chcp 명령 실패해도 계속 진행
+      }
+    }
     
     // Next.js를 실행
     const nextDev = spawn('npx', ['next', 'dev', '-p', port.toString()], {
@@ -66,7 +76,12 @@ async function main() {
       env: { 
         ...process.env, 
         FORCE_COLOR: '1',
-        NODE_ENV: 'development'
+        NODE_ENV: 'development',
+        // Windows에서 UTF-8 인코딩 강제
+        ...(process.platform === 'win32' && { 
+          CHCP: '65001',
+          PYTHONIOENCODING: 'utf-8'
+        })
       },
       // Windows에서 인코딩 문제 해결
       ...(process.platform === 'win32' && { windowsVerbatimArguments: false })
@@ -74,8 +89,9 @@ async function main() {
     
     // 프로세스가 시작되었는지 확인
     nextDev.on('spawn', () => {
-      console.log(`\n🚀 Next.js 개발 서버가 포트 ${port}번에서 시작 중입니다.`);
-      console.log(`   빌드가 완료되면 "Ready" 메시지가 표시됩니다. 잠시만 기다려주세요.\n`);
+      // Windows 인코딩 문제를 피하기 위해 영어 메시지 사용
+      console.log(`\n🚀 Next.js dev server starting on port ${port}...`);
+      console.log(`   Please wait for "Ready" message.\n`);
     });
     
     nextDev.on('error', (error) => {
