@@ -80,10 +80,13 @@ export default function ScriptGenerationPage() {
   const [additionalRequirements, setAdditionalRequirements] = useState("");
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [generatedScript, setGeneratedScript] = useState(""); // 실제 생성된 대본
+  const [knowledgeGeneratedScript, setKnowledgeGeneratedScript] = useState(""); // 지식 전달 대본
   const [usedPrompt, setUsedPrompt] = useState(""); // 대본 생성에 사용된 프롬프트
+  const [knowledgeUsedPrompt, setKnowledgeUsedPrompt] = useState(""); // 지식 전달 대본 생성에 사용된 프롬프트
   const [fullContentLength, setFullContentLength] = useState(0); // 가져온 전체 본문 길이
   const [contentSource, setContentSource] = useState<"full_article" | "description">("description"); // 본문 출처
   const [showUsedPrompt, setShowUsedPrompt] = useState(false); // 사용된 프롬프트 표시 여부
+  const [showKnowledgeUsedPrompt, setShowKnowledgeUsedPrompt] = useState(false); // 지식 전달 사용된 프롬프트 표시 여부
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   
@@ -1149,6 +1152,8 @@ ${fullContent.length < 200 ? `**⚠️ 중요: 입력 본문이 짧습니다 (${
   const handleResetKnowledgePrompt = () => {
     setKnowledgeTopic("");
     setGeneratedPrompt("");
+    setKnowledgeGeneratedScript("");
+    setKnowledgeUsedPrompt("");
     setCopied(false);
     setTopicSuggestions([]);
     setShowSuggestions(false);
@@ -1219,8 +1224,8 @@ ${fullContent.length < 200 ? `**⚠️ 중요: 입력 본문이 짧습니다 (${
     setShowSuggestions(false);
   };
 
-  // 지식 전달 대본 프롬프트 생성 함수
-  const handleGenerateKnowledgePrompt = () => {
+  // 지식 전달 대본 생성 함수
+  const handleGenerateKnowledgePrompt = async () => {
     if (!knowledgeTopic.trim()) {
       alert("주제를 입력해주세요.");
       return;
@@ -1233,6 +1238,8 @@ ${fullContent.length < 200 ? `**⚠️ 중요: 입력 본문이 짧습니다 (${
     }
 
     setIsGenerating(true);
+    setError(null);
+    setKnowledgeGeneratedScript(""); // 이전 대본 초기화
     // 뉴스 선택 상태 초기화 (지식 전달 모드로 전환)
     setSelectedNews([]);
     setVideoTopic("");
@@ -1446,9 +1453,65 @@ ${processedTopic}
 `;
     }
 
-    setGeneratedPrompt(sanitizeGeneratedPrompt(prompt));
-    setCopied(false);
-    setIsGenerating(false);
+    // 프롬프트 저장 (참고용 및 확인용)
+    const sanitizedPrompt = sanitizeGeneratedPrompt(prompt);
+    setGeneratedPrompt(sanitizedPrompt);
+    setKnowledgeUsedPrompt(sanitizedPrompt); // 지식 전달 대본 생성에 사용된 프롬프트 저장
+
+    // AI API를 호출하여 실제 대본 생성
+    try {
+      console.log("[Knowledge Script Generation] Calling AI API to generate script...");
+      console.log("[Knowledge Script Generation] Topic:", processedTopic);
+      console.log("[Knowledge Script Generation] Prompt length:", prompt.length);
+      
+      const response = await fetch("/api/ai/generate-script", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      console.log("[Knowledge Script Generation] API Response status:", response.status);
+
+      if (!response.ok) {
+        let errorMessage = "대본 생성 중 오류가 발생했습니다.";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+          console.error("[Knowledge Script Generation] API Error:", errorData);
+        } catch (parseError) {
+          const errorText = await response.text();
+          console.error("[Knowledge Script Generation] API Error (text):", errorText);
+          errorMessage = `대본 생성 실패 (HTTP ${response.status}): ${errorText.substring(0, 200)}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      console.log("[Knowledge Script Generation] API Response data:", { 
+        success: data.success, 
+        hasScript: !!data.script,
+        scriptLength: data.script?.length 
+      });
+      
+      if (data.success && data.script) {
+        console.log("[Knowledge Script Generation] ✅ Script generated successfully, length:", data.script.length);
+        setKnowledgeGeneratedScript(data.script);
+        setError(null); // 성공 시 에러 초기화
+      } else {
+        console.error("[Knowledge Script Generation] ❌ Invalid response format:", data);
+        throw new Error(data.error || "대본 생성에 실패했습니다. 응답 형식이 올바르지 않습니다.");
+      }
+    } catch (err: any) {
+      console.error("[Knowledge Script Generation] ❌ Error generating script:", err);
+      const errorMessage = err.message || "대본 생성 중 오류가 발생했습니다. OpenAI API 키가 설정되어 있는지 확인해주세요.";
+      setError(errorMessage);
+      // 오류가 발생해도 프롬프트는 표시 (사용자가 수동으로 사용 가능)
+    } finally {
+      setCopied(false);
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -1927,11 +1990,76 @@ ${processedTopic}
               className="primary-button"
               disabled={isGenerating}
             >
-              {isGenerating ? "생성 중..." : "지식 전달 대본 프롬프트 생성"}
+              {isGenerating ? "대본 생성 중..." : "지식 전달 대본 생성"}
             </button>
           </div>
 
-          {generatedPrompt && knowledgeTopic && !selectedNews.length && (
+          {error && knowledgeTopic && !selectedNews.length && (
+            <div className="error-message" style={{ 
+              padding: '16px', 
+              backgroundColor: '#fff3cd', 
+              border: '1px solid #ffc107', 
+              borderRadius: '4px',
+              marginBottom: '16px'
+            }}>
+              <h4 style={{ margin: '0 0 8px 0', color: '#856404' }}>⚠️ 대본 생성 실패</h4>
+              <p style={{ margin: 0, color: '#856404' }}>{error}</p>
+              <p style={{ margin: '8px 0 0 0', fontSize: '0.9em', color: '#856404' }}>
+                브라우저 콘솔(F12)에서 자세한 오류 로그를 확인할 수 있습니다.
+              </p>
+            </div>
+          )}
+
+          {knowledgeGeneratedScript && knowledgeTopic && !selectedNews.length && (
+            <div className="prompt-result">
+              <div className="result-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <h3 style={{ margin: 0 }}>생성된 대본</h3>
+                  <span className="version-badge" style={{ fontSize: '0.85em', color: '#666' }}>
+                    (템플릿 버전: v{knowledgeScriptVersion})
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => setShowKnowledgeUsedPrompt(!showKnowledgeUsedPrompt)}
+                    className="copy-button"
+                    style={{ fontSize: '0.9em', padding: '6px 12px' }}
+                  >
+                    {showKnowledgeUsedPrompt ? "📄 프롬프트 숨기기" : "📄 사용된 프롬프트 보기"}
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(knowledgeGeneratedScript);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      } catch (err) {
+                        console.error("복사 실패:", err);
+                      }
+                    }}
+                    className="copy-button"
+                  >
+                    {copied ? "✓ 복사됨" : "📋 복사"}
+                  </button>
+                </div>
+              </div>
+              {showKnowledgeUsedPrompt && knowledgeUsedPrompt && (
+                <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '4px', border: '1px solid #ddd' }}>
+                  <div style={{ marginBottom: '8px', fontWeight: 'bold', fontSize: '0.9em', color: '#666' }}>
+                    📋 대본 생성에 사용된 프롬프트
+                  </div>
+                  <div className="prompt-content" style={{ maxHeight: '400px', overflow: 'auto' }}>
+                    <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: '0.85em' }}>{knowledgeUsedPrompt}</pre>
+                  </div>
+                </div>
+              )}
+              <div className="prompt-content">
+                <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{knowledgeGeneratedScript}</pre>
+              </div>
+            </div>
+          )}
+          
+          {!knowledgeGeneratedScript && generatedPrompt && knowledgeTopic && !selectedNews.length && (
             <div className="prompt-result">
               <div className="result-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -1939,6 +2067,11 @@ ${processedTopic}
                   <span className="version-badge" style={{ fontSize: '0.85em', color: '#666' }}>
                     (템플릿 버전: v{knowledgeScriptVersion})
                   </span>
+                  {error && (
+                    <span className="version-badge" style={{ fontSize: '0.85em', color: '#ffc107' }}>
+                      (대본 생성 실패 - 프롬프트만 표시)
+                    </span>
+                  )}
                 </div>
                 <button
                   onClick={handleCopyPrompt}
@@ -1957,7 +2090,7 @@ ${processedTopic}
                     <li>위의 "📋 복사" 버튼을 클릭하여 프롬프트를 복사하세요.</li>
                     <li>ChatGPT, Claude, Gemini 등 AI 도구를 열어주세요.</li>
                     <li>복사한 프롬프트를 AI 도구에 붙여넣고 실행하세요.</li>
-                    <li>AI가 생성한 3분 대본을 확인하세요.</li>
+                    <li>AI가 생성한 대본을 확인하세요.</li>
                   </ol>
                 </div>
               </div>
