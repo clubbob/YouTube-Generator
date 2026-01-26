@@ -1536,21 +1536,24 @@ ${fullContent.length < 200 ? `**⚠️ 중요: 입력 본문이 짧습니다 (${
 
       console.log("[Script Generation] API Response status:", response.status);
 
+      // Response body를 한 번만 읽기 위해 먼저 텍스트로 읽고, JSON 파싱 시도
+      const responseText = await response.text();
+      
       if (!response.ok) {
         let errorMessage = "대본 생성 중 오류가 발생했습니다.";
         try {
-          const errorData = await response.json();
+          const errorData = JSON.parse(responseText);
           errorMessage = errorData.error || errorData.message || errorMessage;
           console.error("[Script Generation] API Error:", errorData);
         } catch (parseError) {
-          const errorText = await response.text();
-          console.error("[Script Generation] API Error (text):", errorText);
-          errorMessage = `대본 생성 실패 (HTTP ${response.status}): ${errorText.substring(0, 200)}`;
+          console.error("[Script Generation] API Error (text):", responseText);
+          errorMessage = `대본 생성 실패 (HTTP ${response.status}): ${responseText.substring(0, 200)}`;
         }
         throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      // 성공한 경우 JSON 파싱
+      const data = JSON.parse(responseText);
       console.log("[Script Generation] API Response data:", { 
         success: data.success, 
         hasScript: !!data.script,
@@ -1944,21 +1947,24 @@ ${processedTopic}
 
       console.log("[Knowledge Script Generation] API Response status:", response.status);
 
+      // Response body를 한 번만 읽기 위해 먼저 텍스트로 읽고, JSON 파싱 시도
+      const responseText = await response.text();
+      
       if (!response.ok) {
         let errorMessage = "대본 생성 중 오류가 발생했습니다.";
         try {
-          const errorData = await response.json();
+          const errorData = JSON.parse(responseText);
           errorMessage = errorData.error || errorData.message || errorMessage;
           console.error("[Knowledge Script Generation] API Error:", errorData);
         } catch (parseError) {
-          const errorText = await response.text();
-          console.error("[Knowledge Script Generation] API Error (text):", errorText);
-          errorMessage = `대본 생성 실패 (HTTP ${response.status}): ${errorText.substring(0, 200)}`;
+          console.error("[Knowledge Script Generation] API Error (text):", responseText);
+          errorMessage = `대본 생성 실패 (HTTP ${response.status}): ${responseText.substring(0, 200)}`;
         }
         throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      // 성공한 경우 JSON 파싱
+      const data = JSON.parse(responseText);
       console.log("[Knowledge Script Generation] API Response data:", { 
         success: data.success, 
         hasScript: !!data.script,
