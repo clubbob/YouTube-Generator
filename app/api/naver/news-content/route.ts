@@ -40,21 +40,32 @@ export async function GET(request: NextRequest) {
     // 네이버 뉴스 본문 추출 - 다양한 패턴 시도
     let content = "";
     
-    // 패턴 1: 네이버 뉴스 표준 본문 ID들
+    // 패턴 1: 네이버 뉴스 표준 본문 ID들 (더 많은 패턴 추가)
     const patterns = [
+      // 네이버 뉴스 특화 패턴
       /<div[^>]*id="articleBodyContents"[^>]*>([\s\S]*?)<\/div>/i,
       /<div[^>]*id="articleBody"[^>]*>([\s\S]*?)<\/div>/i,
       /<div[^>]*id="_article_body_contents"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*id="newsEndBody"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*id="articleBodyContents"[^>]*>([\s\S]*?)<\/div>/i,
+      // 클래스 기반 패턴
       /<div[^>]*class="[^"]*article_body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
       /<div[^>]*class="[^"]*articleBody[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
       /<div[^>]*class="[^"]*article-body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
       /<div[^>]*class="[^"]*article_content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
       /<div[^>]*class="[^"]*articleContent[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*class="[^"]*news_end_body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*class="[^"]*article_view[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*class="[^"]*go_trans _article_content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*class="[^"]*news_end_body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      // article/section 태그
       /<article[^>]*id="articleBody"[^>]*>([\s\S]*?)<\/article>/i,
       /<article[^>]*class="[^"]*article[^"]*"[^>]*>([\s\S]*?)<\/article>/i,
       /<section[^>]*class="[^"]*article[^"]*"[^>]*>([\s\S]*?)<\/section>/i,
+      // 네이버 뉴스 특화 추가 패턴
       /<div[^>]*class="[^"]*news_end_body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-      /<div[^>]*class="[^"]*article_view[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*id="newsEndBody"[^>]*>([\s\S]*?)<\/div>/i,
+      /<div[^>]*class="[^"]*article_info[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
     ];
     
     for (const pattern of patterns) {
@@ -80,16 +91,41 @@ export async function GET(request: NextRequest) {
       console.warn("[News Content] Failed to extract content. HTML length:", html.length);
       console.warn("[News Content] Trying to find any div with substantial content...");
       
-      // 마지막 시도: 본문처럼 보이는 긴 div 찾기
-      const allDivs = html.match(/<div[^>]*>([\s\S]{300,}?)<\/div>/gi);
+      // 마지막 시도: 본문처럼 보이는 긴 div 찾기 (더 넓은 범위)
+      const allDivs = html.match(/<div[^>]*>([\s\S]{200,}?)<\/div>/gi);
       if (allDivs) {
-        for (const div of allDivs) {
+        // 텍스트 길이로 정렬하여 가장 긴 div 찾기
+        const divsWithText = allDivs.map(div => {
           const text = div.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-          if (text.length > 200 && !text.includes("function") && !text.includes("script")) {
-            content = div;
-            console.log("[News Content] Content found using fallback div search");
-            break;
-          }
+          return { div, text, length: text.length };
+        }).filter(item => 
+          item.length > 200 && 
+          !item.text.includes("function") && 
+          !item.text.includes("script") &&
+          !item.text.includes("var ") &&
+          !item.text.includes("document.") &&
+          !item.text.includes("window.") &&
+          item.text.match(/[가-힣]{10,}/) // 한글이 10자 이상 포함된 것만
+        ).sort((a, b) => b.length - a.length);
+        
+        if (divsWithText.length > 0) {
+          content = divsWithText[0].div;
+          console.log("[News Content] Content found using fallback div search, length:", divsWithText[0].length);
+        }
+      }
+    }
+    
+    // 여전히 찾지 못한 경우, p 태그들을 모아서 본문으로 사용
+    if (!content || content.trim().length < 100) {
+      const pTags = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi);
+      if (pTags && pTags.length > 3) {
+        const combinedText = pTags.map(p => {
+          return p.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        }).filter(text => text.length > 20).join(" ");
+        
+        if (combinedText.length > 200) {
+          content = pTags.join(" ");
+          console.log("[News Content] Content found using p tags, combined length:", combinedText.length);
         }
       }
     }
