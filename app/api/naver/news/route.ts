@@ -216,8 +216,8 @@ function computeInterestScore(item: NaverNewsItem, query: string, mode: ContentM
   const published = safeParseDate(item.pubDate)?.getTime();
   const ageHours = published ? Math.max(0, (now - published) / (1000 * 60 * 60)) : 24 * 7;
 
-  // 신선도(0~1): 0시간=1, 7일 이후는 0에 수렴
-  const freshness = clamp(1 - ageHours / (24 * 7), 0, 1);
+  // 신선도(0~1): 0시간=1, 3일 이후는 0에 수렴 (최신 기사 우선)
+  const freshness = clamp(1 - ageHours / (24 * 3), 0, 1);
 
   // 설명 길이(0~1): 너무 짧으면 소재가 빈약할 확률 ↑
   const descLen = (item.description || "").trim().length;
@@ -257,14 +257,14 @@ function computeInterestScore(item: NaverNewsItem, query: string, mode: ContentM
 
   // 가중치 합(0~1 근처)
   const score =
-    0.35 * freshness +
-    0.25 * depth +
-    0.20 * explainer +
-    0.10 * specificity +
-    0.10 * queryMatch -
+    0.50 * freshness + // 신선도 가중치 증가로 최신 기사 우선
+    0.20 * depth +
+    0.15 * explainer +
+    0.08 * specificity +
+    0.07 * queryMatch -
     shortTitlePenalty +
     // 모드가 선택되면 “해당 모드 키워드/신호”를 좀 더 우선
-    (mode === "default" ? 0 : 0.18 * modeBoost) -
+    (mode === "default" ? 0 : 0.15 * modeBoost) -
     modePenalty;
 
   return Math.round(score * 1000) / 1000;
@@ -359,7 +359,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get("query") || "";
     const display = clamp(parseInt(searchParams.get("display") || "10"), 1, 100);
-    const sort = searchParams.get("sort") || "sim"; // sim: 정확도순, date: 날짜순
+    const sort = searchParams.get("sort") || "date"; // sim: 정확도순, date: 날짜순 (기본값을 날짜순으로 변경)
     const rerank = (searchParams.get("rerank") || "off") as RerankMode;
     const mode = (searchParams.get("mode") || "default") as ContentMode;
     const domainLimit = clamp(parseInt(searchParams.get("domainLimit") || "2"), 1, 10);
@@ -384,7 +384,8 @@ export async function GET(request: NextRequest) {
 
     // 네이버 검색 API 호출
     // 중복 제거 후에도 display 개수를 최대한 채우기 위해 더 넉넉히 가져옵니다.
-    const apiDisplay = clamp(display * 6, display, 100);
+    // 최신 기사를 더 많이 가져오기 위해 display를 더 크게 설정
+    const apiDisplay = clamp(display * 8, display, 100); // 6배 -> 8배로 증가
     const apiUrl = `https://openapi.naver.com/v1/search/news.json?query=${encodeURIComponent(query)}&display=${apiDisplay}&sort=${sort}`;
     
     const response = await fetch(apiUrl, {
@@ -445,6 +446,26 @@ export async function GET(request: NextRequest) {
         pubDate: item.pubDate || "",
       };
     });
+
+    // 최신 기사 필터링: 오늘부터 최근 3일 이내의 기사만 포함 (더 넓은 범위로 설정)
+    const now = Date.now();
+    const threeDaysAgo = now - (3 * 24 * 60 * 60 * 1000); // 3일 전
+    
+    const filteredItems = items.filter((item) => {
+      const published = safeParseDate(item.pubDate)?.getTime();
+      if (!published) return false; // 날짜 파싱 실패 시 제외
+      return published >= threeDaysAgo; // 최근 3일 이내만 포함
+    });
+    
+    // 필터링된 결과가 충분하면 사용, 부족하면 원본 사용
+    if (filteredItems.length >= display * 0.5) {
+      // 필터링된 결과가 요청한 개수의 50% 이상이면 필터링된 결과 사용
+      items = filteredItems;
+      console.log(`[Naver News] 최신 기사 필터링: ${data.items.length}개 중 ${items.length}개만 최근 3일 이내`);
+    } else {
+      // 필터링된 결과가 부족하면 원본 사용 (하지만 날짜순 정렬은 유지)
+      console.log(`[Naver News] 최신 기사 부족: ${filteredItems.length}개만 최근 3일 이내, 원본 ${items.length}개 사용`);
+    }
 
     if (rerank === "interest") {
       // 흥미도 기준 재정렬 + 중복 제거 + 도메인 쏠림 완화

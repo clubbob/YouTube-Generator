@@ -75,7 +75,7 @@ export default function NewsPage() {
   const [contentMode, setContentMode] = useState<ContentMode>("default");
 
   // 뉴스 검색 함수
-  const fetchNews = async (searchQuery: string, display: number = 20, sort: string = "sim") => {
+  const fetchNews = async (searchQuery: string, display: number = 20, sort: string = "date") => {
     try {
       const params = new URLSearchParams({
         query: searchQuery,
